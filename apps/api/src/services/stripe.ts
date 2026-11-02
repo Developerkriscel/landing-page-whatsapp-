@@ -88,7 +88,7 @@ export async function createCheckoutSession(params: {
         price_data: {
           currency: 'usd',
           unit_amount: Math.round(params.sixMonthPrice.amountUsd * 100),
-          product_data: { name: `${params.planName} plan (6 months)` },
+          product_data: { name: `${params.sixMonthPrice?.planName ?? 'Subscription'} plan (6 months)` },
           recurring: { interval: 'month', interval_count: 6 },
         },
         quantity: 1,

@@ -7,7 +7,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { openCashfreeCheckout, openRazorpayCheckout } from '../lib/checkout';
-import { useCurrency, formatMoney } from '../lib/money';
 import { getPlanInterval, getIntervalLabel, getIntervalMonths } from '../lib/subscriptionTerms';
 import {
   CreditCard, Check, Download, ExternalLink, Loader2, AlertCircle,
@@ -21,8 +20,9 @@ interface BillingInfo {
     id: string;
     name: string;
     tier: string;
-    monthlyPrice: number;
-    annualPrice: number;
+    monthlyPriceInr: number;
+    sixMonthPriceInr: number;
+    twelveMonthPriceInr: number;
   };
   status: string;
   isOnTrial: boolean;
@@ -70,18 +70,19 @@ interface Plan {
   id: string;
   name: string;
   tier: string;
-  monthlyPrice: number;
-  annualPrice: number;
-  cashfreeGstRatePercent: number;
-  cashfreeMonthlyBaseInr: number;
-  cashfreeMonthlyGstInr: number;
-  cashfreeMonthlyTotalInr: number;
-  cashfreeSixMonthBaseInr: number;
-  cashfreeSixMonthGstInr: number;
-  cashfreeSixMonthTotalInr: number;
-  cashfreeAnnualBaseInr: number;
-  cashfreeAnnualGstInr: number;
-  cashfreeAnnualTotalInr: number;
+  monthlyPriceInr: number;
+  sixMonthPriceInr: number;
+  twelveMonthPriceInr: number;
+  gstRatePercent: number;
+  monthlyBaseInr: number;
+  monthlyGstInr: number;
+  monthlyTotalInr: number;
+  sixMonthBaseInr: number;
+  sixMonthGstInr: number;
+  sixMonthTotalInr: number;
+  twelveMonthBaseInr: number;
+  twelveMonthGstInr: number;
+  twelveMonthTotalInr: number;
   description: string;
   limits: any;
   features: any;
@@ -111,7 +112,6 @@ interface UsageAlert {
 }
 
 export default function BillingPage() {
-  const fx = useCurrency();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showUpgradeModal, setShowUpgradeModal] = useState<Plan | null>(null);
@@ -289,9 +289,28 @@ export default function BillingPage() {
   const currentInterval = getPlanInterval(currentTier || '');
   const checkoutInterval = showUpgradeModal ? getPlanInterval(showUpgradeModal.tier) : 'monthly';
   const prepaidExpired = !!billing?.planExpiresAt && new Date(billing.planExpiresAt).getTime() <= Date.now();
+
+  const requestedTier = searchParams.get('plan')?.toUpperCase();
+  useEffect(() => {
+    if (!requestedTier || !billing || !plans.length) return;
+    const requested = plans.find((plan) => plan.tier === requestedTier);
+    if (requested && (currentTier !== requestedTier || prepaidExpired)) {
+      setShowUpgradeModal(requested);
+      setTermsAccepted(false);
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('plan');
+    next.delete('interval');
+    setSearchParams(next, { replace: true });
+  }, [requestedTier, billing, plans.length]);
+
   const usage = billing?.usage;
   const contactsLimit = usage?.contacts?.limit ?? 0;
   const messagesLimit = usage?.messages?.limit ?? 0;
+  const currentPlanPriceInr = billing?.plan
+    ? currentInterval === 'monthly' ? billing.plan.monthlyPriceInr
+      : currentInterval === 'six_month' ? billing.plan.sixMonthPriceInr : billing.plan.twelveMonthPriceInr
+    : 0;
 
   // Helper functions
   const formatLimit = (val: number) => {
@@ -304,7 +323,7 @@ export default function BillingPage() {
     new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
       maximumFractionDigits: 2,
     }).format(amount);
 
@@ -408,11 +427,9 @@ export default function BillingPage() {
               <div>
                 <p className="text-2xl font-bold text-ios-dark">{getIntervalLabel(currentInterval)}</p>
                 <p className="text-ios-muted">
-                  {Number(billing.plan?.monthlyPrice) < 0
+                  {billing.plan?.tier === 'ENTERPRISE'
                     ? 'Custom pricing'
-                    : currentInterval === 'annual'
-                    ? `${formatMoney(Number(billing.plan?.annualPrice) / 12, fx, { decimals: 0 })}/month · billed every 12 months`
-                    : `${formatMoney(Number(billing.plan?.monthlyPrice), fx, { decimals: 0 })}/month${currentInterval === 'six_month' ? ' · billed every 6 months' : ''}`}
+                    : `${formatInr(Number(currentPlanPriceInr || 0))} incl. GST / ${getIntervalLabel(currentInterval)}`}
                 </p>
               </div>
             </div>
@@ -599,15 +616,11 @@ export default function BillingPage() {
           {plans.filter(p => p.tier !== 'ENTERPRISE').map((plan) => {
             const interval = getPlanInterval(plan.tier);
             const months = interval === 'monthly' ? 1 : interval === 'six_month' ? 6 : 12;
-            const stripePrice = interval === 'monthly'
-              ? Number(plan.monthlyPrice)
-              : interval === 'six_month' ? Number(plan.monthlyPrice) : Number(plan.annualPrice) / 12;
-            const cashfreeBase = Number(plan[interval === 'monthly' ? 'cashfreeMonthlyBaseInr' : interval === 'six_month' ? 'cashfreeSixMonthBaseInr' : 'cashfreeAnnualBaseInr']);
-            const cashfreeGst = Number(plan[interval === 'monthly' ? 'cashfreeMonthlyGstInr' : interval === 'six_month' ? 'cashfreeSixMonthGstInr' : 'cashfreeAnnualGstInr']);
-            const cashfreeTotal = Number(plan[interval === 'monthly' ? 'cashfreeMonthlyTotalInr' : interval === 'six_month' ? 'cashfreeSixMonthTotalInr' : 'cashfreeAnnualTotalInr']);
-            const price = billing?.paymentProvider === 'cashfree' || billing?.paymentProvider === 'razorpay'
-              ? cashfreeTotal / months
-              : stripePrice;
+            const basePrice = interval === 'monthly'
+              ? Number(plan.monthlyPriceInr)
+              : interval === 'six_month' ? Number(plan.sixMonthPriceInr) : Number(plan.twelveMonthPriceInr);
+            const cashfreeGst = Number(plan[interval === 'monthly' ? 'monthlyGstInr' : interval === 'six_month' ? 'sixMonthGstInr' : 'twelveMonthGstInr']);
+            const period = months === 1 ? 'month' : `${months} months`;
             const isCurrent = currentTier === plan.tier && !prepaidExpired;
             const isPopular = plan.tier === 'GROWTH';
             const isDowngrade = getPlanOrder(currentTier) > getPlanOrder(plan.tier);
@@ -635,25 +648,20 @@ export default function BillingPage() {
                 <p className="text-sm text-ios-muted mt-1">{plan.description}</p>
                 <p className="mt-2 text-xs font-semibold text-wa-green">{getIntervalLabel(interval)} billing</p>
 
+                {/* Credits included */}
+                <p className="mt-1 text-xs text-ios-muted">
+                  {plan.tier === 'STARTER' ? '500 credits included' : plan.tier === 'GROWTH' ? '3,000 credits included' : '6,000 credits included'}
+                </p>
+
                 <div className="mt-4 mb-6">
                   <span className="text-4xl font-bold text-ios-dark">
-                    {billing?.paymentProvider === 'cashfree' || billing?.paymentProvider === 'razorpay'
-                      ? formatInr(price)
-                      : `$${Number.isInteger(price) ? price : price.toFixed(0)}`}
+                    {formatInr(basePrice)}
                   </span>
-                  <span className="text-ios-muted">/month</span>
-                  {billing?.paymentProvider === 'cashfree' || billing?.paymentProvider === 'razorpay' ? (
+                  <span className="ml-1 text-sm text-ios-muted">incl. GST / {period}</span>
+                  {(billing?.paymentProvider === 'cashfree' || billing?.paymentProvider === 'razorpay') && (
                     <div className="mt-2 space-y-1 text-xs text-ios-muted">
-                      <p>Plan price: {formatInr(cashfreeBase)} billed every {months} month(s)</p>
-                      <p>GST ({plan.cashfreeGstRatePercent}%): {formatInr(cashfreeGst)}</p>
-                      <p className="font-semibold text-ios-dark">
-                        Total including GST: {formatInr(cashfreeTotal)} billed every {months} month(s)
-                      </p>
+                      <p>Includes GST ({plan.gstRatePercent}%): {formatInr(cashfreeGst)}</p>
                     </div>
-                  ) : interval !== 'monthly' && (
-                    <p className="text-sm text-apple-green mt-1">
-                      ${interval === 'six_month' ? Number(plan.monthlyPrice) * 6 : plan.annualPrice}/{months} months
-                    </p>
                   )}
                 </div>
 
@@ -840,18 +848,18 @@ export default function BillingPage() {
                 </p>
                 <div className="space-y-2">
                   <div className="flex justify-between gap-4">
-                    <span className="text-ios-muted">Plan price</span>
+                    <span className="text-ios-muted">Price before GST</span>
                     <span className="text-ios-dark">
                       {formatInr(Number(showUpgradeModal[
-                        checkoutInterval === 'monthly' ? 'cashfreeMonthlyBaseInr' : checkoutInterval === 'six_month' ? 'cashfreeSixMonthBaseInr' : 'cashfreeAnnualBaseInr'
+                        checkoutInterval === 'monthly' ? 'monthlyBaseInr' : checkoutInterval === 'six_month' ? 'sixMonthBaseInr' : 'twelveMonthBaseInr'
                       ]))}
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-ios-muted">GST ({showUpgradeModal.cashfreeGstRatePercent}%)</span>
+                    <span className="text-ios-muted">GST ({showUpgradeModal.gstRatePercent}%)</span>
                     <span className="text-ios-dark">
                       {formatInr(Number(showUpgradeModal[
-                        checkoutInterval === 'monthly' ? 'cashfreeMonthlyGstInr' : checkoutInterval === 'six_month' ? 'cashfreeSixMonthGstInr' : 'cashfreeAnnualGstInr'
+                        checkoutInterval === 'monthly' ? 'monthlyGstInr' : checkoutInterval === 'six_month' ? 'sixMonthGstInr' : 'twelveMonthGstInr'
                       ]))}
                     </span>
                   </div>
@@ -859,7 +867,7 @@ export default function BillingPage() {
                     <span className="text-ios-dark">Total payable</span>
                     <span className="text-ios-dark">
                       {formatInr(Number(showUpgradeModal[
-                        checkoutInterval === 'monthly' ? 'cashfreeMonthlyTotalInr' : checkoutInterval === 'six_month' ? 'cashfreeSixMonthTotalInr' : 'cashfreeAnnualTotalInr'
+                        checkoutInterval === 'monthly' ? 'monthlyTotalInr' : checkoutInterval === 'six_month' ? 'sixMonthTotalInr' : 'twelveMonthTotalInr'
                       ]))}
                     </span>
                   </div>

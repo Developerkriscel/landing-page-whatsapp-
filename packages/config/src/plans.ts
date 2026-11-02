@@ -1,5 +1,5 @@
 // PRICING PLANS -- Configuration
-// 4 tiers: Starter ($49), Growth ($149), Business ($399), Enterprise (Custom)
+// Three customer plans use rupee prices for monthly, 6-month, and 12-month terms.
 
 // ============================================
 // Types
@@ -48,8 +48,9 @@ export interface PricingPlan {
   name: string;
   tier: PlanTier;
   description: string;
-  monthlyPrice: number;
-  annualPrice: number;
+  monthlyPriceInr: number;
+  sixMonthPriceInr: number;
+  twelveMonthPriceInr: number;
   currency: string;
   limits: PlanLimits;
   features: PlanFeatures;
@@ -82,18 +83,19 @@ export interface AddOn {
 export const PLANS: PricingPlan[] = [
   {
     id: 'plan_starter',
-    name: 'Starter',
+    name: 'Monthly',
     tier: 'STARTER',
-    description: 'Perfect for small businesses just getting started with WhatsApp messaging.',
-    monthlyPrice: 49,
-    annualPrice: 470,
-    currency: 'USD',
+    description: 'Perfect for small businesses getting started with WhatsApp automation.',
+    monthlyPriceInr: 1800,
+    sixMonthPriceInr: 9999,
+    twelveMonthPriceInr: 14999,
+    currency: 'INR',
     limits: {
       maxContacts: -1,
       maxMessagesPerMonth: -1,
       maxPhoneNumbers: 1,
       maxTeamMembers: 3,
-      maxChatbotFlows: 1,
+      maxChatbotFlows: 5,
       maxCampaigns: 10,
       maxSegments: 5,
       maxContactsPerCampaign: -1,
@@ -105,14 +107,14 @@ export const PLANS: PricingPlan[] = [
     },
     features: {
       analytics: true,
-      chatbotBuilder: false,
-      whatsappFlows: false,
-      apiAccess: false,
-      aiChatbot: false,
+      chatbotBuilder: true,
+      whatsappFlows: true,
+      apiAccess: true,
+      aiChatbot: true,
       customBranding: false,
-      prioritySupport: false,
-      advancedAnalytics: false,
-      whiteLabel: false,
+      prioritySupport: true,
+      advancedAnalytics: true,
+      whiteLabel: true,
       dripCampaigns: false,
       abTesting: false,
       contactImport: true,
@@ -129,17 +131,18 @@ export const PLANS: PricingPlan[] = [
   },
   {
     id: 'plan_growth',
-    name: 'Growth',
+    name: '6-Month',
     tier: 'GROWTH',
-    description: 'For growing teams that need automation, chatbot builder, and API access.',
-    monthlyPrice: 149,
-    annualPrice: 1430,
-    currency: 'USD',
+    description: 'For growing teams that need automation and API access.',
+    monthlyPriceInr: 1800,
+    sixMonthPriceInr: 9999,
+    twelveMonthPriceInr: 14999,
+    currency: 'INR',
     limits: {
       maxContacts: -1,
       maxMessagesPerMonth: -1,
-      maxPhoneNumbers: 3,
-      maxTeamMembers: 10,
+      maxPhoneNumbers: 1,
+      maxTeamMembers: 2,
       maxChatbotFlows: 10,
       maxCampaigns: 50,
       maxSegments: 25,
@@ -153,12 +156,12 @@ export const PLANS: PricingPlan[] = [
     features: {
       analytics: true,
       chatbotBuilder: true,
-      whatsappFlows: false,
+      whatsappFlows: true,
       apiAccess: true,
-      aiChatbot: false,
+      aiChatbot: true,
       customBranding: false,
-      prioritySupport: false,
-      advancedAnalytics: false,
+      prioritySupport: true,
+      advancedAnalytics: true,
       whiteLabel: false,
       dripCampaigns: false,
       abTesting: false,
@@ -176,17 +179,18 @@ export const PLANS: PricingPlan[] = [
   },
   {
     id: 'plan_business',
-    name: 'Business',
+    name: '12-Month',
     tier: 'BUSINESS',
-    description: 'Full-featured with AI chatbot, WhatsApp Flows, and advanced analytics.',
-    monthlyPrice: 399,
-    annualPrice: 3830,
-    currency: 'USD',
+    description: 'Full-featured with AI chatbot, Flows, and advanced analytics.',
+    monthlyPriceInr: 1800,
+    sixMonthPriceInr: 9999,
+    twelveMonthPriceInr: 14999,
+    currency: 'INR',
     limits: {
       maxContacts: -1,
       maxMessagesPerMonth: -1,
-      maxPhoneNumbers: 10,
-      maxTeamMembers: 25,
+      maxPhoneNumbers: 1,
+      maxTeamMembers: 3,
       maxChatbotFlows: 50,
       maxCampaigns: 200,
       maxSegments: 100,
@@ -226,9 +230,10 @@ export const PLANS: PricingPlan[] = [
     name: 'Enterprise',
     tier: 'ENTERPRISE',
     description: 'Unlimited scale with white-label option and dedicated support.',
-    monthlyPrice: -1, // Custom pricing
-    annualPrice: -1,
-    currency: 'USD',
+    monthlyPriceInr: -1, // Custom pricing
+    sixMonthPriceInr: -1,
+    twelveMonthPriceInr: -1,
+    currency: 'INR',
     limits: {
       maxContacts: -1, // Unlimited
       maxMessagesPerMonth: -1,
@@ -363,9 +368,9 @@ export function getPopularPlan(): PricingPlan | undefined {
 /**
  * Format price for display
  */
-export function formatPrice(amount: number, currency = 'USD'): string {
+export function formatPrice(amount: number, currency = 'INR'): string {
   if (amount === -1) return 'Custom';
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -374,14 +379,12 @@ export function formatPrice(amount: number, currency = 'USD'): string {
 }
 
 /**
- * Calculate annual discount percentage
+ * Get the configured amount for a plan's assigned term.
  */
-export function getAnnualDiscount(): number {
-  const starterPlan = getPlanByTier('STARTER');
-  if (!starterPlan) return 0;
-  const annualMonthly = starterPlan.annualPrice / 12;
-  const discount = ((starterPlan.monthlyPrice - annualMonthly) / starterPlan.monthlyPrice) * 100;
-  return Math.round(discount);
+export function getTermPrice(plan: PricingPlan): number {
+  if (plan.tier === 'GROWTH') return plan.sixMonthPriceInr;
+  if (plan.tier === 'BUSINESS') return plan.twelveMonthPriceInr;
+  return plan.monthlyPriceInr;
 }
 
 /**
@@ -410,9 +413,13 @@ export function comparePlans(planA: PricingPlan, planB: PricingPlan): {
 } {
   const differences: string[] = [];
 
-  if (planA.monthlyPrice < planB.monthlyPrice) {
+  const monthlyEquivalent = (plan: PricingPlan) => {
+    const months = plan.tier === 'GROWTH' ? 6 : plan.tier === 'BUSINESS' ? 12 : 1;
+    return getTermPrice(plan) / months;
+  };
+  if (monthlyEquivalent(planA) < monthlyEquivalent(planB)) {
     differences.push(`${planA.name} is cheaper`);
-  } else if (planA.monthlyPrice > planB.monthlyPrice) {
+  } else if (monthlyEquivalent(planA) > monthlyEquivalent(planB)) {
     differences.push(`${planB.name} is cheaper`);
   }
 

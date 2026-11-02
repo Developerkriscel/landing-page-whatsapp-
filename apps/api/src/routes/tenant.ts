@@ -3,6 +3,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
 import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
+import { enforceUserLimit } from '../services/billingEnforcement.js';
 import { z } from 'zod';
 import { syncTemplatesFromMeta, submitTemplateToMeta, fetchMetaTemplates, resolveEffectiveWabaId, resolveWabaToken, uploadTemplateHeaderSample, localTemplateStatus } from '../services/metaTemplate.js';
 import { decryptSecret } from '../services/credentialEncryption.js';
@@ -3605,6 +3606,14 @@ export async function registerTenantRoutes(app: FastifyInstance): Promise<void> 
       return reply.status(409).send({
         success: false,
         error: { code: 'EMAIL_EXISTS', message: 'User with this email already exists' },
+      });
+    }
+
+    const userLimit = await enforceUserLimit(app.prisma, request.authUser.tenantId!);
+    if (!userLimit.allowed) {
+      return reply.status(403).send({
+        success: false,
+        error: { code: 'LIMIT_EXCEEDED', message: userLimit.error },
       });
     }
 

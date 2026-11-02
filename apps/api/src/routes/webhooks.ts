@@ -5,9 +5,7 @@ import { handleWebhookVerification, parseIncomingMessage, isStopKeyword } from '
 import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 import { getDefaultConfig } from '@whatsapp-saas/config/guards';
 import { broadcastToTenant, broadcastMessageStatus } from './sse.js';
-import { getCurrencyContext } from '../services/currency.js';
-import { EXCHANGE_RATES } from '../services/currencyService.js';
-import { CASHFREE_PLAN_GST_RATE_PERCENT, quoteCashfreePlanPrice } from '../services/cashfreePlanPricing.js';
+import { PLAN_GST_RATE_PERCENT, quotePlanPriceInr } from '../services/cashfreePlanPricing.js';
 
 const whatsappConfig = getDefaultConfig();
 
@@ -93,27 +91,28 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
       orderBy: { sortOrder: 'asc' },
     });
 
-    const currency = await getCurrencyContext(app.prisma);
-    const usdToInr = currency.currency === 'INR' ? currency.fxRate : EXCHANGE_RATES.INR;
-
     return {
       success: true,
       data: plans.map((plan) => {
-        const monthly = quoteCashfreePlanPrice(Number(plan.monthlyPrice), usdToInr);
-        const annual = quoteCashfreePlanPrice(Number(plan.annualPrice), usdToInr);
+        const monthly = quotePlanPriceInr(Number(plan.monthlyPriceInr));
+        const sixMonth = quotePlanPriceInr(Number(plan.sixMonthPriceInr));
+        const annual = quotePlanPriceInr(Number(plan.twelveMonthPriceInr));
         const unlimitedContactsAndMessages = hasUnlimitedContactsAndMessages(plan.tier);
         return {
           ...plan,
           maxContacts: unlimitedContactsAndMessages ? -1 : plan.maxContacts,
           maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : plan.maxMessagesPerMonth,
           maxContactsPerCampaign: unlimitedContactsAndMessages ? -1 : plan.maxContactsPerCampaign,
-          cashfreeGstRatePercent: CASHFREE_PLAN_GST_RATE_PERCENT,
-          cashfreeMonthlyBaseInr: monthly.baseMinor / 100,
-          cashfreeMonthlyGstInr: monthly.gstMinor / 100,
-          cashfreeMonthlyTotalInr: monthly.totalMinor / 100,
-          cashfreeAnnualBaseInr: annual.baseMinor / 100,
-          cashfreeAnnualGstInr: annual.gstMinor / 100,
-          cashfreeAnnualTotalInr: annual.totalMinor / 100,
+          gstRatePercent: PLAN_GST_RATE_PERCENT,
+          monthlyBaseInr: monthly.baseMinor / 100,
+          monthlyGstInr: monthly.gstMinor / 100,
+          monthlyTotalInr: monthly.totalMinor / 100,
+          sixMonthBaseInr: sixMonth.baseMinor / 100,
+          sixMonthGstInr: sixMonth.gstMinor / 100,
+          sixMonthTotalInr: sixMonth.totalMinor / 100,
+          twelveMonthBaseInr: annual.baseMinor / 100,
+          twelveMonthGstInr: annual.gstMinor / 100,
+          twelveMonthTotalInr: annual.totalMinor / 100,
         };
       }),
     };

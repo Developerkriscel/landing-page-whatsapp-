@@ -360,6 +360,47 @@ export async function enforceUserLimit(
 }
 
 /**
+ * Enforce phone number limit before connecting new numbers
+ */
+export async function enforcePhoneNumberLimit(
+  prisma: PrismaClient,
+  tenantId: string,
+  adding = 1
+): Promise<{ allowed: boolean; error?: string; current: number; limit: number }> {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    include: { plan: true },
+  });
+
+  if (!tenant) {
+    return { allowed: false, error: 'Tenant not found', current: 0, limit: 0 };
+  }
+
+  const planTier = (tenant.plan?.tier as PlanTier) || PlanTier.STARTER;
+  const limit = getPlanLimits(planTier, tenant.plan).maxPhoneNumbers;
+
+  if (limit === -1) {
+    return { allowed: true, current: 0, limit: -1 };
+  }
+
+  // Disconnected rows are kept for reconnection and don't occupy a plan slot.
+  const current = await prisma.phoneNumber.count({
+    where: { tenantId, status: { not: 'disconnected' } },
+  });
+
+  if (current + adding > limit) {
+    return {
+      allowed: false,
+      error: `Phone number limit reached. Your plan allows ${limit} phone number${limit === 1 ? '' : 's'}.`,
+      current,
+      limit,
+    };
+  }
+
+  return { allowed: true, current, limit };
+}
+
+/**
  * Check if feature is available
  */
 export async function checkFeatureAccess(

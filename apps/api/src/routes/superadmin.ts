@@ -1217,6 +1217,9 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
       tier: z.enum(['STARTER', 'GROWTH', 'BUSINESS', 'ENTERPRISE']),
       monthlyPrice: z.number().min(0),
       annualPrice: z.number().min(0),
+      monthlyPriceInr: z.number().min(0).default(0),
+      sixMonthPriceInr: z.number().min(0).default(0),
+      twelveMonthPriceInr: z.number().min(0).default(0),
       description: z.string().optional(),
     });
 
@@ -1245,6 +1248,9 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
       name: z.string().min(1).optional(),
       monthlyPrice: z.number().min(0).optional(),
       annualPrice: z.number().min(0).optional(),
+      monthlyPriceInr: z.number().min(0).optional(),
+      sixMonthPriceInr: z.number().min(0).optional(),
+      twelveMonthPriceInr: z.number().min(0).optional(),
       description: z.string().optional(),
       sortOrder: z.number().optional(),
       maxContacts: z.number().int().min(-1).optional(),

@@ -19,9 +19,7 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 import crypto from 'crypto';
 import { decryptIfPresent } from './credentialEncryption.js';
-import { getCurrencyContext } from './currency.js';
-import { EXCHANGE_RATES } from './currencyService.js';
-import { CASHFREE_PLAN_GST_RATE_PERCENT, quoteCashfreePlanPrice } from './cashfreePlanPricing.js';
+import { LEDGER_UNITS_PER_CREDIT, PLAN_GST_RATE_PERCENT, PLAN_INCLUDED_CREDITS, quotePlanPriceInr } from './cashfreePlanPricing.js';
 
 export interface CreateOrderInput {
   tenantId: string;
@@ -37,7 +35,7 @@ export interface CreatePlanOrderInput {
   planTier: string;
   planName: string;
   interval: 'monthly' | 'six_month' | 'annual';
-  amountUsd: number;
+  amountInr: number;
   customer: CheckoutCustomer;
 }
 
@@ -250,13 +248,11 @@ export async function createRazorpayPlanOrder(
   if (provider.provider !== 'razorpay') {
     throw new Error('Razorpay is not the active payment provider.');
   }
-  if (!Number.isFinite(input.amountUsd) || input.amountUsd <= 0) {
+  if (!Number.isFinite(input.amountInr) || input.amountInr <= 0) {
     throw new Error('This plan does not have a purchasable price.');
   }
 
-  const currency = await getCurrencyContext(prisma);
-  const usdToInr = currency.currency === 'INR' ? currency.fxRate : EXCHANGE_RATES.INR;
-  const quote = quoteCashfreePlanPrice(input.amountUsd, usdToInr);
+  const quote = quotePlanPriceInr(input.amountInr);
   const { baseMinor, gstMinor, totalMinor: amountMinor } = quote;
   if (amountMinor < 100) throw new Error('The minimum charge is ₹1.00.');
 
@@ -297,10 +293,9 @@ export async function createRazorpayPlanOrder(
         planId: input.planId,
         planTier: input.planTier,
         interval: input.interval,
-        amountUsd: input.amountUsd,
-        usdToInr,
+        amountInr: input.amountInr,
         baseMinor,
-        gstRatePercent: CASHFREE_PLAN_GST_RATE_PERCENT,
+        gstRatePercent: PLAN_GST_RATE_PERCENT,
         gstMinor,
         totalMinor: amountMinor,
       },
@@ -332,13 +327,11 @@ export async function createCashfreePlanOrder(
   if (phone.length < 10 || phone.length > 15) {
     throw new Error('Add a valid phone number to your user profile before paying with Cashfree.');
   }
-  if (!Number.isFinite(input.amountUsd) || input.amountUsd <= 0) {
+  if (!Number.isFinite(input.amountInr) || input.amountInr <= 0) {
     throw new Error('This plan does not have a purchasable price.');
   }
 
-  const currency = await getCurrencyContext(prisma);
-  const usdToInr = currency.currency === 'INR' ? currency.fxRate : EXCHANGE_RATES.INR;
-  const quote = quoteCashfreePlanPrice(input.amountUsd, usdToInr);
+  const quote = quotePlanPriceInr(input.amountInr);
   const { baseMinor, gstMinor, totalMinor: amountMinor } = quote;
   if (amountMinor < 100) throw new Error('The minimum charge is ₹1.00.');
 
@@ -383,10 +376,9 @@ export async function createCashfreePlanOrder(
         planId: input.planId,
         planTier: input.planTier,
         interval: input.interval,
-        amountUsd: input.amountUsd,
-        usdToInr,
+        amountInr: input.amountInr,
         baseMinor,
-        gstRatePercent: CASHFREE_PLAN_GST_RATE_PERCENT,
+        gstRatePercent: PLAN_GST_RATE_PERCENT,
         gstMinor,
         totalMinor: amountMinor,
       },
@@ -513,12 +505,45 @@ async function activateRazorpayPlan(
         stripeSubId: null,
       },
     });
+    await grantIncludedPlanCredits(tx, order, plan, paymentId);
     return true;
   });
 
   return activated
-    ? { credited: true, credits: 0, activated: true, reason: `Plan active until ${planExpiresAt.toISOString()}.` }
+    ? { credited: true, credits: includedLedgerCredits(plan.tier), activated: true, reason: `Plan active until ${planExpiresAt.toISOString()}.` }
     : { credited: false, credits: 0, reason: 'Already confirmed.' };
+}
+
+function includedLedgerCredits(tier: string): number {
+  return (PLAN_INCLUDED_CREDITS[tier] ?? 0) * LEDGER_UNITS_PER_CREDIT;
+}
+
+// Must run inside the transaction that claims the order, so a repeated confirmation cannot grant twice.
+async function grantIncludedPlanCredits(
+  tx: Prisma.TransactionClient,
+  order: { tenantId: string; providerOrderId: string },
+  plan: { tier: string; name: string },
+  paymentId: string,
+): Promise<void> {
+  const amount = includedLedgerCredits(plan.tier);
+  if (amount <= 0) return;
+
+  const account = await tx.tenantCredit.upsert({
+    where: { tenantId: order.tenantId },
+    create: { tenantId: order.tenantId, balance: amount, totalPurchased: 0, totalUsed: 0 },
+    update: { balance: { increment: amount } },
+  });
+  await tx.tenantCreditTransaction.create({
+    data: {
+      creditId: account.id,
+      type: 'BONUS',
+      amount,
+      referenceId: order.providerOrderId,
+      referenceType: 'BONUS',
+      description: `Included with ${plan.name} plan — ${paymentId}`,
+      balanceAfter: account.balance,
+    },
+  });
 }
 
 async function grantPaymentCredits(
@@ -658,10 +683,11 @@ export async function confirmCashfreeOrder(
           stripeSubId: null,
         },
       });
+      await grantIncludedPlanCredits(tx, order, plan, paymentId);
       return true;
     });
     return activated
-      ? { credited: true, credits: 0, reason: `Plan active until ${planExpiresAt.toISOString()}.` }
+      ? { credited: true, credits: includedLedgerCredits(plan.tier), reason: `Plan active until ${planExpiresAt.toISOString()}.` }
       : { credited: false, credits: 0, reason: 'Already confirmed.' };
   }
 

@@ -9,11 +9,12 @@ interface SubscriptionPlan {
   tier: string;
   name: string;
   description?: string;
-  monthlyPrice: number;
-  annualPrice: number;
-  cashfreeMonthlyTotalInr?: number;
-  cashfreeSixMonthTotalInr?: number;
-  cashfreeAnnualTotalInr?: number;
+  monthlyPriceInr: number;
+  sixMonthPriceInr: number;
+  twelveMonthPriceInr: number;
+  monthlyTotalInr?: number;
+  sixMonthTotalInr?: number;
+  twelveMonthTotalInr?: number;
 }
 
 export default function SubscribePage() {
@@ -39,7 +40,7 @@ export default function SubscribePage() {
 
     Promise.all([api.get('/billing/plans'), api.get('/billing')])
       .then(([plansResponse, billingResponse]) => {
-        const availablePlans = plansResponse.data?.data || [];
+        const availablePlans = (plansResponse.data?.data || []).filter((plan: SubscriptionPlan) => ['STARTER', 'GROWTH', 'BUSINESS'].includes(plan.tier));
         setPaymentProvider(billingResponse.data?.data?.paymentProvider || 'stripe');
         setPlans(availablePlans);
         if (availablePlans.length && !availablePlans.some((plan: SubscriptionPlan) => plan.tier === selectedTier)) {
@@ -133,18 +134,18 @@ export default function SubscribePage() {
 
   const selectedPlan = plans.find((plan) => plan.tier === selectedTier);
   const price = selectedPlan
-    ? interval === 'monthly' ? selectedPlan.monthlyPrice : interval === 'six_month' ? selectedPlan.monthlyPrice * 6 : selectedPlan.annualPrice
+    ? interval === 'monthly' ? selectedPlan.monthlyPriceInr : interval === 'six_month' ? selectedPlan.sixMonthPriceInr : selectedPlan.twelveMonthPriceInr
     : 0;
   const prepaidPrice = selectedPlan
-    ? interval === 'monthly' ? selectedPlan.cashfreeMonthlyTotalInr : interval === 'six_month'
-      ? selectedPlan.cashfreeSixMonthTotalInr ?? (typeof selectedPlan.cashfreeMonthlyTotalInr === 'number' ? selectedPlan.cashfreeMonthlyTotalInr * 6 : undefined)
-      : selectedPlan.cashfreeAnnualTotalInr
+    ? interval === 'monthly' ? selectedPlan.monthlyTotalInr : interval === 'six_month'
+      ? selectedPlan.sixMonthTotalInr
+      : selectedPlan.twelveMonthTotalInr
     : undefined;
   const priceLabel = paymentProvider === 'cashfree' || paymentProvider === 'razorpay'
     ? typeof prepaidPrice === 'number'
       ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(prepaidPrice)
       : 'Price shown at checkout'
-    : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(price);
+    : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(price);
 
   return (
     <main className="min-h-screen bg-ios-background flex items-center justify-center p-4">

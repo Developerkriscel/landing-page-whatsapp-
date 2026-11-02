@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2, Pencil, RefreshCw, X } from 'lucide-react';
 import { api } from '../api/client';
+import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
 
 const hasUnlimitedContactsAndMessages = (tier: string) =>
   tier === 'STARTER' || tier === 'GROWTH' || tier === 'BUSINESS';
@@ -10,8 +11,9 @@ interface Plan {
   id: string;
   name: string;
   tier: string;
-  monthlyPrice: number | string;
-  annualPrice: number | string;
+  monthlyPriceInr: number | string;
+  sixMonthPriceInr: number | string;
+  twelveMonthPriceInr: number | string;
   description: string | null;
   sortOrder: number;
   isPublic: boolean;
@@ -53,8 +55,9 @@ const featureFields = [
 
 type PlanForm = {
   name: string;
-  monthlyPrice: string;
-  annualPrice: string;
+  monthlyPriceInr: string;
+  sixMonthPriceInr: string;
+  twelveMonthPriceInr: string;
   description: string;
   sortOrder: string;
   isPublic: boolean;
@@ -62,11 +65,20 @@ type PlanForm = {
 } & Record<(typeof limitFields)[number][0], string>
   & Record<(typeof featureFields)[number][0], boolean>;
 
+const PRICE_KEYS = {
+  monthly: 'monthlyPriceInr',
+  six_month: 'sixMonthPriceInr',
+  annual: 'twelveMonthPriceInr',
+} as const;
+
+const priceKeyForTier = (tier: string) => PRICE_KEYS[getPlanInterval(tier)];
+
 function toPlanForm(plan: Plan): PlanForm {
   const form: Record<string, string | boolean> = {
     name: plan.name,
-    monthlyPrice: String(plan.monthlyPrice),
-    annualPrice: String(plan.annualPrice),
+    monthlyPriceInr: String(plan.monthlyPriceInr ?? 0),
+    sixMonthPriceInr: String(plan.sixMonthPriceInr ?? 0),
+    twelveMonthPriceInr: String(plan.twelveMonthPriceInr ?? 0),
     description: plan.description || '',
     sortOrder: String(plan.sortOrder),
     isPublic: plan.isPublic,
@@ -77,11 +89,11 @@ function toPlanForm(plan: Plan): PlanForm {
   return form as PlanForm;
 }
 
-function toPlanPayload(form: PlanForm) {
+function toPlanPayload(form: PlanForm, tier: string) {
+  const priceKey = priceKeyForTier(tier);
   const payload: Record<string, string | number | boolean> = {
     name: form.name.trim(),
-    monthlyPrice: Number(form.monthlyPrice),
-    annualPrice: Number(form.annualPrice),
+    [priceKey]: Number(form[priceKey]),
     description: form.description.trim(),
     sortOrder: Number(form.sortOrder),
     isPublic: form.isPublic,
@@ -106,7 +118,7 @@ export default function SuperAdminPlans() {
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!editingPlan || !form) throw new Error('Select a plan before saving.');
-      await api.patch(`/superadmin/plans/${editingPlan.id}`, toPlanPayload(form));
+      await api.patch(`/superadmin/plans/${editingPlan.id}`, toPlanPayload(form, editingPlan.tier));
     },
     onSuccess: async () => {
       await Promise.all([
@@ -138,6 +150,9 @@ export default function SuperAdminPlans() {
   const updateForm = <K extends keyof PlanForm>(key: K, value: PlanForm[K]) => {
     setForm((current) => current ? { ...current, [key]: value } : current);
   };
+
+  const editablePlans = (plansQuery.data || []).filter((plan) => ['STARTER', 'GROWTH', 'BUSINESS'].includes(plan.tier));
+  const formatInr = (value: number | string) => `₹${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
   return (
     <div className="space-y-6">
@@ -173,20 +188,18 @@ export default function SuperAdminPlans() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {(plansQuery.data || []).map((plan) => (
+          {editablePlans.map((plan) => (
             <article key={plan.id} className="card-apple p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-semibold text-ios-dark">{plan.name}</h2>
+                    <h2 className="text-lg font-semibold text-ios-dark">{getIntervalLabel(getPlanInterval(plan.tier))}</h2>
                     <span className="rounded-full bg-ios-gray px-2 py-0.5 text-xs text-ios-muted">
                       {plan.tier}
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-ios-secondary">
-                    ${Number(plan.monthlyPrice).toLocaleString()} / month
-                    <span className="mx-2 text-ios-muted">·</span>
-                    ${Number(plan.annualPrice).toLocaleString()} / year
+                    {formatInr(plan[priceKeyForTier(plan.tier)] as number | string)} incl. GST
                   </p>
                 </div>
                 <button
@@ -224,7 +237,7 @@ export default function SuperAdminPlans() {
           >
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-black/10 bg-white p-4">
               <div>
-                <h2 className="text-lg font-semibold text-ios-dark">Edit {editingPlan.name}</h2>
+                <h2 className="text-lg font-semibold text-ios-dark">Edit {getIntervalLabel(getPlanInterval(editingPlan.tier))}</h2>
                 <p className="text-xs text-ios-muted">Changes are applied to customer pricing and plan enforcement.</p>
               </div>
               <button
@@ -250,18 +263,15 @@ export default function SuperAdminPlans() {
                     <input required type="number" value={form.sortOrder} onChange={(event) => updateForm('sortOrder', event.target.value)} className="input-apple mt-1 w-full" />
                   </label>
                   <label className="text-sm text-ios-secondary">
-                    Monthly price
-                    <input required type="number" min="0" step="0.01" value={form.monthlyPrice} onChange={(event) => updateForm('monthlyPrice', event.target.value)} className="input-apple mt-1 w-full" />
-                  </label>
-                  <label className="text-sm text-ios-secondary">
-                    Annual price
-                    <input required type="number" min="0" step="0.01" value={form.annualPrice} onChange={(event) => updateForm('annualPrice', event.target.value)} className="input-apple mt-1 w-full" />
+                    {getIntervalLabel(getPlanInterval(editingPlan.tier))} price (₹)
+                    <input required type="number" min="0" step="0.01" value={form[priceKeyForTier(editingPlan.tier)]} onChange={(event) => updateForm(priceKeyForTier(editingPlan.tier), event.target.value)} className="input-apple mt-1 w-full" />
                   </label>
                   <label className="text-sm text-ios-secondary sm:col-span-2">
                     Description
                     <textarea value={form.description} onChange={(event) => updateForm('description', event.target.value)} rows={2} className="input-apple mt-1 w-full" />
                   </label>
                 </div>
+                <p className="mt-3 rounded-apple-lg bg-ios-gray p-3 text-xs text-ios-muted">Enter the final price in rupees, including 18% GST and all charges. Razorpay charges exactly this amount.</p>
               </section>
 
               <section>
@@ -283,7 +293,7 @@ export default function SuperAdminPlans() {
               <section>
                 <h3 className="mb-3 text-sm font-semibold text-ios-dark">Usage limits</h3>
                 <p className="mb-3 text-xs text-ios-muted">
-                  Starter, Growth, and Business always have unlimited contacts and monthly messages. Use -1 for other unlimited limits.
+                  Contacts and monthly messages are always unlimited on this plan. Use -1 for other unlimited limits.
                 </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {limitFields.map(([key, label]) => (

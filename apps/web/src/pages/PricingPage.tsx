@@ -11,9 +11,6 @@ import { useAuth } from '../context/AuthContext';
 import kriscelKSrc from '../assets/kriscel-k.jpeg';
 import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
 
-const CASHFREE_PLAN_GST_RATE_PERCENT = 18;
-const FALLBACK_USD_TO_INR_RATE = 88.5;
-
 interface CashfreePlanQuote {
   baseInr: number;
   gstInr: number;
@@ -24,15 +21,18 @@ interface Plan {
   id: string;
   name: string;
   tier: string;
-  monthlyPrice: number;
-  annualPrice: number;
-  cashfreeGstRatePercent?: number;
-  cashfreeMonthlyBaseInr?: number;
-  cashfreeMonthlyGstInr?: number;
-  cashfreeMonthlyTotalInr?: number;
-  cashfreeAnnualBaseInr?: number;
-  cashfreeAnnualGstInr?: number;
-  cashfreeAnnualTotalInr?: number;
+  monthlyPriceInr: number;
+  sixMonthPriceInr: number;
+  twelveMonthPriceInr: number;
+  monthlyBaseInr?: number;
+  monthlyGstInr?: number;
+  monthlyTotalInr?: number;
+  sixMonthBaseInr?: number;
+  sixMonthGstInr?: number;
+  sixMonthTotalInr?: number;
+  twelveMonthBaseInr?: number;
+  twelveMonthGstInr?: number;
+  twelveMonthTotalInr?: number;
   description: string;
   maxContacts: number;
   maxMessagesPerMonth: number;
@@ -95,18 +95,18 @@ export default function PricingPage() {
     new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
       maximumFractionDigits: 2,
     }).format(amount);
 
   const cashfreeQuote = (
-    amountUsd: number,
+    amountInr: number,
     baseInrFromApi?: number,
     gstInrFromApi?: number,
     totalInrFromApi?: number,
   ): CashfreePlanQuote | null => {
-    const baseUsd = Number(amountUsd);
-    if (!Number.isFinite(baseUsd) || baseUsd < 0) return null;
+    const baseInr = Number(amountInr);
+    if (!Number.isFinite(baseInr) || baseInr <= 0) return null;
 
     if (
       typeof baseInrFromApi === 'number' &&
@@ -119,13 +119,7 @@ export default function PricingPage() {
       return { baseInr: baseInrFromApi, gstInr: gstInrFromApi, totalInr: totalInrFromApi };
     }
 
-    const baseMinor = Math.round(baseUsd * FALLBACK_USD_TO_INR_RATE * 100);
-    const gstMinor = Math.round((baseMinor * CASHFREE_PLAN_GST_RATE_PERCENT) / 100);
-    return {
-      baseInr: baseMinor / 100,
-      gstInr: gstMinor / 100,
-      totalInr: (baseMinor + gstMinor) / 100,
-    };
+    return null;
   };
 
   const formatLimit = (val: number) => {
@@ -210,30 +204,12 @@ export default function PricingPage() {
           {plans.filter(p => p.tier !== 'ENTERPRISE').map((plan) => {
             const isPopular = plan.tier === 'GROWTH';
             const interval = getPlanInterval(plan.tier);
-            const monthlyQuote = cashfreeQuote(
-              plan.monthlyPrice,
-              plan.cashfreeMonthlyBaseInr,
-              plan.cashfreeMonthlyGstInr,
-              plan.cashfreeMonthlyTotalInr,
-            );
             const quote = interval === 'monthly'
-              ? cashfreeQuote(
-                  plan.monthlyPrice,
-                  plan.cashfreeMonthlyBaseInr,
-                  plan.cashfreeMonthlyGstInr,
-                  plan.cashfreeMonthlyTotalInr,
-                )
+              ? cashfreeQuote(plan.monthlyPriceInr, plan.monthlyBaseInr, plan.monthlyGstInr, plan.monthlyTotalInr)
               : interval === 'six_month'
-              ? monthlyQuote && { baseInr: monthlyQuote.baseInr * 6, gstInr: monthlyQuote.gstInr * 6, totalInr: monthlyQuote.totalInr * 6 }
-              : cashfreeQuote(
-                  plan.annualPrice,
-                  plan.cashfreeAnnualBaseInr,
-                  plan.cashfreeAnnualGstInr,
-                  plan.cashfreeAnnualTotalInr,
-                );
-            const price = quote
-              ? interval === 'monthly' ? quote.totalInr : interval === 'six_month' ? quote.totalInr / 6 : quote.totalInr / 12
-              : null;
+              ? cashfreeQuote(plan.sixMonthPriceInr, plan.sixMonthBaseInr, plan.sixMonthGstInr, plan.sixMonthTotalInr)
+              : cashfreeQuote(plan.twelveMonthPriceInr, plan.twelveMonthBaseInr, plan.twelveMonthGstInr, plan.twelveMonthTotalInr);
+            const period = interval === 'monthly' ? 'month' : interval === 'six_month' ? '6 months' : '12 months';
             return (
               <div
                 key={plan.id}
@@ -259,16 +235,19 @@ export default function PricingPage() {
                 <p className={`mt-5 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isPopular ? 'bg-white/15 text-white' : 'bg-wa-green/10 text-wa-green'}`}>
                   {interval === 'monthly' ? 'Monthly billing' : interval === 'six_month' ? '6-Month billing' : '12-Month billing'}
                 </p>
+                <p className={`mt-1 text-xs ${isPopular ? 'text-white/70' : 'text-secondary-apple'}`}>
+                  {plan.tier === 'STARTER' ? '500 credits included' : plan.tier === 'GROWTH' ? '3,000 credits included' : '6,000 credits included'}
+                </p>
 
                 <div className="mt-6">
                   <span className={`text-5xl font-bold ${isPopular ? 'text-white' : 'text-primary-apple'}`}>
-                    {price === null ? 'Contact us' : formatInr(price)}
+                    {quote ? formatInr(quote.totalInr) : 'Contact us'}
                   </span>
-                  {price !== null && (
+                  {quote && (
                     <>
-                      <span className={`text-sm ${isPopular ? 'text-white/70' : 'text-secondary-apple'}`}>/month</span>
+                      <span className={`ml-1 text-sm ${isPopular ? 'text-white/70' : 'text-secondary-apple'}`}>incl. GST / {period}</span>
                       <div className={`mt-2 space-y-1 text-xs ${isPopular ? 'text-white/80' : 'text-secondary-apple'}`}>
-                        <p>{formatInr(quote!.totalInr)} billed every {interval === 'monthly' ? 'month' : interval === 'six_month' ? '6 months' : '12 months'}, including GST</p>
+                        {/* <p>{formatInr(quote.totalInr)} total including GST, billed every {period}</p> */}
                       </div>
                     </>
                   )}
@@ -408,11 +387,11 @@ export default function PricingPage() {
               },
               {
                 q: 'How are plan prices calculated?',
-                a: 'Plan prices are charged in INR using the configured USD-to-INR conversion rate. The amount is rounded to the nearest paise.',
+                a: 'Each plan has an INR price for its term: Monthly, 6-Month, or 12-Month. The price shown is the final amount you pay.',
               },
               {
                 q: 'Are taxes included?',
-                a: 'An 18% GST amount is added to the displayed base plan price and itemized before payment.',
+                a: 'Yes. The displayed plan price includes 18% GST and all charges. Nothing is added at checkout.',
               },
               {
                 q: 'Are contacts or monthly messages capped?',
@@ -469,9 +448,8 @@ export default function PricingPage() {
       {/* Footer */}
       <footer className="relative py-12 text-center">
         <p className="mx-auto mb-5 max-w-3xl px-4 text-xs text-secondary-apple">
-          Plan prices are shown in INR using the configured USD-to-INR rate. Checkout adds 18% GST to
-          the base plan price and shows the tax amount and total before payment. Starter, Growth, and
-          Business plans have unlimited contacts and monthly message volume. Sending messages uses
+          Plan prices are set in INR and include 18% GST and all charges. Monthly, 6-Month, and
+          12-Month plans have unlimited contacts and monthly message volume. Sending messages uses
           workspace credits at the rates shown in Billing.
         </p>
         <nav aria-label="Legal and business information" className="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">

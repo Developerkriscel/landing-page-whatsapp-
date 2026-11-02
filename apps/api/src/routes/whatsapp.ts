@@ -25,6 +25,7 @@ import {
 import { encryptSecret, decryptSecret, decryptIfPresent, resolveAccessToken } from '../services/credentialEncryption.js';
 import { resolveEffectiveWabaId, checkWabaAccess } from '../services/metaTemplate.js';
 import { detectCountryFromPhone } from '../services/phoneCountry.js';
+import { enforcePhoneNumberLimit } from '../services/billingEnforcement.js';
 
 /**
  * Registers a freshly connected number with Cloud API. Until this runs the
@@ -312,6 +313,16 @@ export async function registerWhatsAppRoutes(app: FastifyInstance): Promise<void
       });
     }
 
+    if (!existingPhone || existingPhone.status === 'disconnected') {
+      const phoneLimit = await enforcePhoneNumberLimit(app.prisma, request.authUser.tenantId);
+      if (!phoneLimit.allowed) {
+        return reply.status(403).send({
+          success: false,
+          error: { code: 'LIMIT_EXCEEDED', message: phoneLimit.error },
+        });
+      }
+    }
+
     const phoneData = {
       tenantId: request.authUser.tenantId,
       phoneNumber: verifiedPhone.display_phone_number,
@@ -489,6 +500,16 @@ export async function registerWhatsAppRoutes(app: FastifyInstance): Promise<void
           success: false,
           error: { code: 'DUPLICATE', message: 'This phone number is already connected to another workspace' },
         });
+      }
+
+      if (!existingPhone || existingPhone.status === 'disconnected') {
+        const phoneLimit = await enforcePhoneNumberLimit(app.prisma, request.authUser.tenantId);
+        if (!phoneLimit.allowed) {
+          return reply.status(403).send({
+            success: false,
+            error: { code: 'LIMIT_EXCEEDED', message: phoneLimit.error },
+          });
+        }
       }
 
       const phone = existingPhone
@@ -849,25 +870,11 @@ export async function registerWhatsAppRoutes(app: FastifyInstance): Promise<void
       });
     }
 
-    // Check phone number limit based on plan
-    const tenant = await app.prisma.tenant.findUnique({
-      where: { id: request.authUser.tenantId },
-      include: { plan: true },
-    });
-
-    const currentCount = await app.prisma.phoneNumber.count({
-      where: { tenantId: request.authUser.tenantId },
-    });
-
-    // For demo, allow up to 5 phone numbers
-    const maxPhones = tenant?.plan?.tier === 'ENTERPRISE' ? 50 :
-                      tenant?.plan?.tier === 'BUSINESS' ? 10 :
-                      tenant?.plan?.tier === 'GROWTH' ? 5 : 3;
-
-    if (currentCount >= maxPhones) {
+    const phoneLimit = await enforcePhoneNumberLimit(app.prisma, request.authUser.tenantId);
+    if (!phoneLimit.allowed) {
       return reply.status(403).send({
         success: false,
-        error: { code: 'LIMIT_EXCEEDED', message: `Maximum ${maxPhones} phone numbers allowed on your plan` },
+        error: { code: 'LIMIT_EXCEEDED', message: phoneLimit.error },
       });
     }
 
@@ -1988,17 +1995,11 @@ export async function registerWhatsAppRoutes(app: FastifyInstance): Promise<void
 
     const body = schema.parse(request.body);
 
-    // Check current count
-    const currentCount = await app.prisma.phoneNumber.count({
-      where: { tenantId: request.authUser.tenantId },
-    });
-
-    const maxPhones = 10; // Can be increased based on plan
-
-    if (currentCount + body.phoneNumbers.length > maxPhones) {
+    const phoneLimit = await enforcePhoneNumberLimit(app.prisma, request.authUser.tenantId, body.phoneNumbers.length);
+    if (!phoneLimit.allowed) {
       return reply.status(403).send({
         success: false,
-        error: { code: 'LIMIT_EXCEEDED', message: `Import would exceed ${maxPhones} phone limit` },
+        error: { code: 'LIMIT_EXCEEDED', message: phoneLimit.error },
       });
     }
 

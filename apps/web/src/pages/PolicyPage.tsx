@@ -22,7 +22,7 @@ const sections = {
       {
         heading: 'Plans, billing, and message credits',
         paragraphs: [
-          'Plan features, limits, price, currency, and billing interval are shown before you confirm a purchase. Plan prices charged in INR use the configured USD-to-INR conversion rate. Checkout adds GST at the applicable rate (currently 18%) to the converted plan price and shows the base price, GST amount, and total before payment.',
+          'Plan features, limits, price, currency, and billing interval are shown before you confirm a purchase. Plan prices are set and charged in INR and include GST at the applicable rate (currently 18%). The price shown is the final amount payable.',
           'Starter, Growth, and Business plans have no monthly cap on saved contacts or message volume. Sending messages uses workspace credits at the applicable rates displayed in Billing. Message delivery also remains subject to WhatsApp and Meta policies and technical rate limits.',
           'Recurring subscription purchases renew for the selected billing interval until cancelled. You can request cancellation from the Billing page in your account. Cancellation takes effect at the end of the current paid billing period, and access continues until then.',
           'Prepaid plan purchases are one-time payments for the selected one-month or one-year term and do not automatically renew. Access ends when the paid term expires unless you purchase another term.',

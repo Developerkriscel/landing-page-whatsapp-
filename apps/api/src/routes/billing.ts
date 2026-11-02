@@ -18,9 +18,7 @@ import {
 } from '../services/stripe.js';
 import { handleCheckoutCompleted, handleSubscriptionUpsert, handleInvoicePaid } from './stripe-webhook.js';
 import type Stripe from 'stripe';
-import { getCurrencyContext } from '../services/currency.js';
-import { EXCHANGE_RATES } from '../services/currencyService.js';
-import { CASHFREE_PLAN_GST_RATE_PERCENT, quoteCashfreePlanPrice } from '../services/cashfreePlanPricing.js';
+import { PLAN_GST_RATE_PERCENT, quotePlanPriceInr } from '../services/cashfreePlanPricing.js';
 import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 
 const createCheckoutSchema = z.object({
@@ -123,31 +121,28 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
       where: { isPublic: true, isActive: true },
       orderBy: { sortOrder: 'asc' },
     });
-    const currency = await getCurrencyContext(app.prisma);
-    const usdToInr = currency.currency === 'INR' ? currency.fxRate : EXCHANGE_RATES.INR;
-
     return {
       success: true,
       data: plans.map((plan) => {
-        const monthly = quoteCashfreePlanPrice(Number(plan.monthlyPrice), usdToInr);
-        const sixMonth = quoteCashfreePlanPrice(Number(plan.monthlyPrice) * 6, usdToInr);
-        const annual = quoteCashfreePlanPrice(Number(plan.annualPrice), usdToInr);
+        const monthly = quotePlanPriceInr(Number(plan.monthlyPriceInr));
+        const sixMonth = quotePlanPriceInr(Number(plan.sixMonthPriceInr));
+        const annual = quotePlanPriceInr(Number(plan.twelveMonthPriceInr));
         const unlimitedContactsAndMessages = hasUnlimitedContactsAndMessages(plan.tier);
         return {
           ...plan,
           maxContacts: unlimitedContactsAndMessages ? -1 : plan.maxContacts,
           maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : plan.maxMessagesPerMonth,
           maxContactsPerCampaign: unlimitedContactsAndMessages ? -1 : plan.maxContactsPerCampaign,
-          cashfreeGstRatePercent: CASHFREE_PLAN_GST_RATE_PERCENT,
-          cashfreeMonthlyBaseInr: monthly.baseMinor / 100,
-          cashfreeMonthlyGstInr: monthly.gstMinor / 100,
-          cashfreeMonthlyTotalInr: monthly.totalMinor / 100,
-          cashfreeSixMonthBaseInr: sixMonth.baseMinor / 100,
-          cashfreeSixMonthGstInr: sixMonth.gstMinor / 100,
-          cashfreeSixMonthTotalInr: sixMonth.totalMinor / 100,
-          cashfreeAnnualBaseInr: annual.baseMinor / 100,
-          cashfreeAnnualGstInr: annual.gstMinor / 100,
-          cashfreeAnnualTotalInr: annual.totalMinor / 100,
+          gstRatePercent: PLAN_GST_RATE_PERCENT,
+          monthlyBaseInr: monthly.baseMinor / 100,
+          monthlyGstInr: monthly.gstMinor / 100,
+          monthlyTotalInr: monthly.totalMinor / 100,
+          sixMonthBaseInr: sixMonth.baseMinor / 100,
+          sixMonthGstInr: sixMonth.gstMinor / 100,
+          sixMonthTotalInr: sixMonth.totalMinor / 100,
+          twelveMonthBaseInr: annual.baseMinor / 100,
+          twelveMonthGstInr: annual.gstMinor / 100,
+          twelveMonthTotalInr: annual.totalMinor / 100,
           limits: {
             maxContacts: unlimitedContactsAndMessages ? -1 : plan.maxContacts,
             maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : plan.maxMessagesPerMonth,
@@ -251,10 +246,10 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
         return reply.status(404).send({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Selected plan is not available.' } });
       }
 
-      const amountUsd = body.interval === 'monthly'
-        ? Number(plan.monthlyPrice)
-        : body.interval === 'six_month' ? Number(plan.monthlyPrice) * 6 : Number(plan.annualPrice);
-      if (amountUsd <= 0) {
+      const amountInr = body.interval === 'monthly'
+        ? Number(plan.monthlyPriceInr)
+        : body.interval === 'six_month' ? Number(plan.sixMonthPriceInr) : Number(plan.twelveMonthPriceInr);
+      if (amountInr <= 0) {
         return reply.status(400).send({ success: false, error: { code: 'PLAN_NOT_PURCHASABLE', message: 'This plan is not available for online checkout.' } });
       }
 
@@ -266,7 +261,7 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
           planTier: plan.tier,
           planName: plan.name,
           interval: body.interval,
-          amountUsd,
+          amountInr,
           customer: {
             id: tenant.id,
             name: tenant.name,
@@ -302,10 +297,10 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
         return reply.status(404).send({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Selected plan is not available.' } });
       }
 
-      const amountUsd = body.interval === 'monthly'
-        ? Number(plan.monthlyPrice)
-        : body.interval === 'six_month' ? Number(plan.monthlyPrice) * 6 : Number(plan.annualPrice);
-      if (amountUsd <= 0) {
+      const amountInr = body.interval === 'monthly'
+        ? Number(plan.monthlyPriceInr)
+        : body.interval === 'six_month' ? Number(plan.sixMonthPriceInr) : Number(plan.twelveMonthPriceInr);
+      if (amountInr <= 0) {
         return reply.status(400).send({ success: false, error: { code: 'PLAN_NOT_PURCHASABLE', message: 'This plan is not available for online checkout.' } });
       }
 
@@ -328,7 +323,7 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
           planTier: plan.tier,
           planName: plan.name,
           interval: body.interval,
-          amountUsd,
+          amountInr,
           customer: {
             id: tenant.id,
             name: customer.name,

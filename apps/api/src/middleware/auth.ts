@@ -251,6 +251,7 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
               select: {
                 id: true,
                 name: true,
+                tier: true,
                 maxContacts: true,
                 maxMessagesPerMonth: true,
                 maxTeamMembers: true,

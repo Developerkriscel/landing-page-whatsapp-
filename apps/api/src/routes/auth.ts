@@ -25,6 +25,47 @@ const REFRESH_COOKIE_NAME = 'refreshToken';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
 const REFRESH_COOKIE_MAX_AGE_SEC = 7 * 24 * 60 * 60; // 7 days, matches token expiry below
 
+function createBillingOnlyToken(app: FastifyInstance, user: {
+  id: string;
+  email: string;
+  role: string;
+  tenantId: string;
+}) {
+  return app.jwt.sign({
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+    tenantId: user.tenantId,
+    isSuperadmin: false,
+    billingOnly: true,
+  }, { expiresIn: '1h' });
+}
+
+async function hasLoginEntitlement(app: FastifyInstance, tenantId: string) {
+  const [tenant, paidPlanOrder, paidInvoice, creditAccount] = await Promise.all([
+    app.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { status: true, isOnTrial: true, stripeSubId: true },
+    }),
+    app.prisma.paymentOrder.findFirst({
+      where: { tenantId, status: 'PAID', credits: 0, amountMinor: { gt: 0 } },
+      select: { breakdown: true },
+    }),
+    app.prisma.invoice.findFirst({
+      where: { tenantId, status: 'paid', amount: { gt: 0 } },
+      select: { id: true },
+    }),
+    app.prisma.tenantCredit.findUnique({
+      where: { tenantId },
+      select: { balance: true },
+    }),
+  ]);
+
+  const activeStripeSubscription = !!tenant?.stripeSubId && tenant.status === 'ACTIVE' && !tenant.isOnTrial;
+  const paidPrepaidPlan = (paidPlanOrder?.breakdown as { kind?: string } | null)?.kind === 'PLAN_PURCHASE';
+  return activeStripeSubscription || paidPrepaidPlan || !!paidInvoice || (creditAccount?.balance ?? 0) > 0;
+}
+
 function refreshCookieOptions() {
   return {
     httpOnly: true,
@@ -86,6 +127,24 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(403).send({
           success: false,
           error: { code: 'ACCOUNT_DISABLED', message: 'Your account has been disabled' },
+        });
+      }
+
+      if (!await hasLoginEntitlement(app, user.tenantId)) {
+        return reply.status(402).send({
+          success: false,
+          error: {
+            code: 'SUBSCRIPTION_REQUIRED',
+            message: 'A paid subscription or a positive credit balance is required to sign in.',
+          },
+          data: {
+            billingToken: createBillingOnlyToken(app, {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              tenantId: user.tenantId,
+            }),
+          },
         });
       }
 
@@ -237,10 +296,10 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       const tenant = await tx.tenant.create({
         data: {
           name: body.company || body.tenantName || `${body.name}'s Workspace`,
-          status: 'TRIAL',
+          status: 'PENDING_SETUP',
           planId: starterPlan.id,
-          isOnTrial: true,
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+          isOnTrial: false,
+          trialEndsAt: null,
           timezone: 'UTC',
           defaultLanguage: 'en',
         },
@@ -262,17 +321,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       return { tenant, user };
     });
 
-    // Generate tokens
-    const tokens = await generateTokens(app, {
-      id: result.user.id,
-      email: result.user.email,
-      role: result.user.role,
-      tenantId: result.tenant.id,
-      isSuperadmin: false,
-    });
-
-    await issueRefreshCookie(app, reply, tokens.refreshToken, result.user.id, result.tenant.id);
-
     return reply.status(201).send({
       success: true,
       data: {
@@ -288,11 +336,13 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           id: result.tenant.id,
           name: result.tenant.name,
           status: result.tenant.status,
-          trialEndsAt: result.tenant.trialEndsAt,
         },
-        accessToken: tokens.accessToken,
-        expiresIn: tokens.expiresIn,
-        tokenType: tokens.tokenType,
+        billingToken: createBillingOnlyToken(app, {
+          id: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          tenantId: result.tenant.id,
+        }),
       },
     });
   });
@@ -385,6 +435,29 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(401).send({
         success: false,
         error: { code: 'USER_NOT_FOUND', message: 'User not found or inactive' },
+      });
+    }
+
+    if (!await hasLoginEntitlement(app, user.tenantId)) {
+      await app.prisma.refreshToken.update({
+        where: { id: refreshToken.id },
+        data: { revokedAt: new Date() },
+      });
+      reply.clearCookie(REFRESH_COOKIE_NAME, { path: REFRESH_COOKIE_PATH });
+      return reply.status(402).send({
+        success: false,
+        error: {
+          code: 'SUBSCRIPTION_REQUIRED',
+          message: 'A paid subscription or a positive credit balance is required to sign in.',
+        },
+        data: {
+          billingToken: createBillingOnlyToken(app, {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            tenantId: user.tenantId,
+          }),
+        },
       });
     }
 

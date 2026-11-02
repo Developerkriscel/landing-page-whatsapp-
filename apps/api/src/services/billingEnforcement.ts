@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient, PlanTier } from '@prisma/client';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 
 interface PlanLimits {
   maxContacts: number;
@@ -26,8 +27,8 @@ interface PlanLimits {
 // Default limits per plan tier
 const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   STARTER: {
-    maxContacts: 500,
-    maxMessagesPerMonth: 5000,
+    maxContacts: -1,
+    maxMessagesPerMonth: -1,
     maxPhoneNumbers: 1,
     maxUsers: 3,
     maxCampaigns: 5,
@@ -43,8 +44,8 @@ const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     },
   },
   GROWTH: {
-    maxContacts: 5000,
-    maxMessagesPerMonth: 50000,
+    maxContacts: -1,
+    maxMessagesPerMonth: -1,
     maxPhoneNumbers: 3,
     maxUsers: 10,
     maxCampaigns: 25,
@@ -60,8 +61,8 @@ const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
     },
   },
   BUSINESS: {
-    maxContacts: 50000,
-    maxMessagesPerMonth: 500000,
+    maxContacts: -1,
+    maxMessagesPerMonth: -1,
     maxPhoneNumbers: 10,
     maxUsers: 50,
     maxCampaigns: 100,
@@ -138,11 +139,12 @@ export function getPlanLimits(plan: PlanTier, configuredPlan?: {
 } | null): PlanLimits {
   const defaults = PLAN_LIMITS[plan] || PLAN_LIMITS.STARTER;
   if (!configuredPlan) return defaults;
+  const unlimitedContactsAndMessages = hasUnlimitedContactsAndMessages(plan);
 
   return {
     ...defaults,
-    maxContacts: configuredPlan.maxContacts,
-    maxMessagesPerMonth: configuredPlan.maxMessagesPerMonth,
+    maxContacts: unlimitedContactsAndMessages ? -1 : configuredPlan.maxContacts,
+    maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : configuredPlan.maxMessagesPerMonth,
     maxPhoneNumbers: configuredPlan.maxPhoneNumbers,
     maxUsers: configuredPlan.maxTeamMembers,
     maxCampaigns: configuredPlan.maxCampaigns,

@@ -8,7 +8,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { Eye, EyeOff, Lock, Mail, Building, CheckCircle } from 'lucide-react';
 
-const STEPS = ['Account', 'Workspace', 'Verify'];
+const STEPS = ['Account', 'Workspace', 'Subscription'];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -53,18 +53,23 @@ export default function RegisterPage() {
       }
       setLoading(true);
       try {
-        await api.post('/auth/register', form);
+        const response = await api.post('/auth/register', form);
+        const billingToken = response.data?.data?.billingToken;
+        if (!billingToken) throw new Error('Could not start the subscription checkout. Please try again.');
+        sessionStorage.setItem('signupBillingToken', billingToken);
+        sessionStorage.setItem('signupSelectedPlan', form.plan);
+        sessionStorage.setItem('signupPhone', form.phone);
         nextStep();
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Registration failed');
+        setError(err.response?.data?.error?.message || err.message || 'Registration failed');
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    // step === 2: account already created, just head to sign in
-    navigate('/login');
+    // A short-lived billing token allows plan checkout without signing in.
+    navigate('/subscribe');
   };
 
   const passwordStrength = (pwd: string) => {
@@ -230,9 +235,9 @@ export default function RegisterPage() {
                 <div className="w-16 h-16 bg-apple-green/20 text-apple-green rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-bold text-ios-dark">Account created</h3>
+                <h3 className="text-lg font-bold text-ios-dark">Choose a subscription to continue</h3>
                 <p className="text-ios-secondary mt-2 text-sm">
-                  Your workspace <strong className="text-ios-dark">{form.company}</strong> is ready. Sign in to get started.
+                  Your workspace <strong className="text-ios-dark">{form.company}</strong> is ready. Purchase a plan to activate it and sign in.
                 </p>
               </div>
             )}
@@ -260,7 +265,7 @@ export default function RegisterPage() {
                 disabled={loading}
                 className="flex-1 py-3 bg-wa-green text-white font-semibold rounded-apple-lg hover:bg-wa-green/90 transition disabled:opacity-50"
               >
-                {loading ? 'Please wait...' : step === 2 ? 'Go to Sign In' : 'Continue'}
+                {loading ? 'Please wait...' : step === 2 ? 'Choose subscription' : 'Continue'}
               </button>
             </div>
           </form>

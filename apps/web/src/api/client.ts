@@ -9,7 +9,11 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
+  const requestPath = config.url || '';
+  const isBillingRequest = requestPath.startsWith('/billing');
+  const token = isBillingRequest
+    ? sessionStorage.getItem('signupBillingToken') || localStorage.getItem('accessToken')
+    : localStorage.getItem('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -42,7 +46,9 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login');
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+    const isBillingOnlyRequest = originalRequest.url?.startsWith('/billing')
+      && !!sessionStorage.getItem('signupBillingToken');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint && !isBillingOnlyRequest) {
       originalRequest._retry = true;
       try {
         const accessToken = await refreshAccessToken();

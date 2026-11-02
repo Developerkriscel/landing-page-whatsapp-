@@ -4,6 +4,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
 import { randomBytes } from 'crypto';
 import { hasPermission, type Resource, type Action } from '@whatsapp-saas/config/rbac';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 
 // Define auth user type
 export interface AuthUser {
@@ -13,6 +14,7 @@ export interface AuthUser {
   tenantId?: string;
   superadminId?: string;
   isSuperadmin: boolean;
+  billingOnly?: boolean;
 }
 
 export interface TenantContext {
@@ -108,6 +110,36 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
         });
       }
 
+      const [paidPlanOrder, paidInvoice, creditAccount] = await Promise.all([
+        app.prisma.paymentOrder.findFirst({
+          where: { tenantId: keyDoc.tenantId, status: 'PAID', credits: 0, amountMinor: { gt: 0 } },
+          select: { breakdown: true },
+        }),
+        app.prisma.invoice.findFirst({
+          where: { tenantId: keyDoc.tenantId, status: 'paid', amount: { gt: 0 } },
+          select: { id: true },
+        }),
+        app.prisma.tenantCredit.findUnique({
+          where: { tenantId: keyDoc.tenantId },
+          select: { balance: true },
+        }),
+      ]);
+      const paidPrepaidPlan = (paidPlanOrder?.breakdown as { kind?: string } | null)?.kind === 'PLAN_PURCHASE';
+      const paidStripeSubscription = !!keyDoc.tenant.stripeSubId
+        && keyDoc.tenant.status === 'ACTIVE'
+        && !keyDoc.tenant.isOnTrial;
+
+      const hasCredits = (creditAccount?.balance ?? 0) > 0;
+      if (!paidPrepaidPlan && !paidStripeSubscription && !paidInvoice && !hasCredits) {
+        return reply.status(402).send({
+          success: false,
+          error: {
+            code: 'SUBSCRIPTION_REQUIRED',
+            message: 'A paid subscription or a positive credit balance is required to access your workspace.',
+          },
+        });
+      }
+
       if (keyDoc.tenant.planExpiresAt && keyDoc.tenant.planExpiresAt < new Date() && !keyDoc.tenant.stripeSubId) {
         return reply.status(402).send({
           success: false,
@@ -162,7 +194,31 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
         tenantId?: string;
         superadminId?: string;
         isSuperadmin: boolean;
+        billingOnly?: boolean;
       }>(token);
+
+      if (decoded.billingOnly) {
+        const route = `${request.method} ${request.url.split('?')[0]}`;
+        const billingOnlyRoutes = new Set([
+          'GET /api/v1/billing',
+          'GET /api/v1/billing/plans',
+          'PUT /api/v1/billing/setup/phone',
+          'POST /api/v1/billing/checkout',
+          'POST /api/v1/billing/checkout/confirm-razorpay',
+          'POST /api/v1/billing/checkout/confirm-cashfree',
+          'GET /api/v1/billing/success',
+        ]);
+
+        if (!billingOnlyRoutes.has(route)) {
+          return reply.status(403).send({
+            success: false,
+            error: {
+              code: 'BILLING_ACCESS_ONLY',
+              message: 'Purchase a subscription before accessing your workspace.',
+            },
+          });
+        }
+      }
 
       // Set user on request
       request.authUser = {
@@ -172,6 +228,7 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
         tenantId: decoded.tenantId,
         superadminId: decoded.superadminId,
         isSuperadmin: decoded.isSuperadmin,
+        billingOnly: decoded.billingOnly,
       };
 
       // Load tenant context for tenant users
@@ -179,6 +236,17 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
         const tenant = await app.prisma.tenant.findUnique({
           where: { id: decoded.tenantId },
           include: {
+            paymentOrders: {
+              where: { status: 'PAID', credits: 0, amountMinor: { gt: 0 } },
+              select: { breakdown: true },
+              take: 1,
+            },
+            invoices: {
+              where: { status: 'paid', amount: { gt: 0 } },
+              select: { id: true },
+              take: 1,
+            },
+            credits: { select: { balance: true } },
             plan: {
               select: {
                 id: true,
@@ -228,20 +296,39 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
           });
         }
 
-        // trialEndsAt was set at signup and never compared to anything, so every
-        // trial ran indefinitely. Billing and auth routes stay reachable so an
-        // expired tenant can still log in and pay rather than being locked out
-        // of the only screen that would fix their situation.
-        //
-        // A Stripe subscription overrides the trial window. Status is not
-        // reliable on its own: tenants exist on paid plans whose status was
-        // never moved off TRIAL, and gating on the stale flag alone locked a
-        // paying customer out of their own account.
-        const hasPaidSubscription = !!tenant.stripeSubId;
+        const hasPaidPlanOrder = tenant.paymentOrders.some(
+          (order) => (order.breakdown as { kind?: string } | null)?.kind === 'PLAN_PURCHASE',
+        );
+        const hasPaidStripeSubscription = !!tenant.stripeSubId && tenant.status === 'ACTIVE' && !tenant.isOnTrial;
+        const hasPaidInvoice = tenant.invoices.length > 0;
+        const hasCredits = (tenant.credits?.balance ?? 0) > 0;
+        const hasAccessEntitlement = hasPaidPlanOrder || hasPaidStripeSubscription || hasPaidInvoice || hasCredits;
+        const isBillingOrSignupRoute = [
+          '/api/v1/billing',
+          '/api/v1/auth',
+          '/api/v1/plans',
+          '/api/v1/credits/rates',
+        ].some((prefix) => request.url.startsWith(prefix));
+
+        if (!hasAccessEntitlement && !isBillingOrSignupRoute) {
+          return reply.status(402).send({
+            success: false,
+            error: {
+              code: 'SUBSCRIPTION_REQUIRED',
+              message: 'A paid subscription or a positive credit balance is required to access your workspace.',
+            },
+          });
+        }
+
+        // Keep the billing and public auth routes reachable so unpaid accounts
+        // can purchase a plan. Subscription purchase history, rather than the
+        // trial flag or tenant status alone, decides whether workspace access
+        // is allowed.
+        const hasEntitlement = hasAccessEntitlement;
 
         if (
           tenant.status === 'TRIAL' &&
-          !hasPaidSubscription &&
+          !hasEntitlement &&
           tenant.trialEndsAt &&
           tenant.trialEndsAt < new Date()
         ) {
@@ -293,8 +380,8 @@ async function authMiddlewareInner(app: FastifyInstance): Promise<void> {
                 id: tenant.plan.id,
                 name: tenant.plan.name,
                 limits: {
-                  maxContacts: tenant.plan.maxContacts,
-                  maxMessagesPerMonth: tenant.plan.maxMessagesPerMonth,
+                  maxContacts: hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxContacts,
+                  maxMessagesPerMonth: hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxMessagesPerMonth,
                   maxTeamMembers: tenant.plan.maxTeamMembers,
                   maxChatbotFlows: tenant.plan.maxChatbotFlows,
                   maxCampaigns: tenant.plan.maxCampaigns,

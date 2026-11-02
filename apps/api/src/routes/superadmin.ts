@@ -2,6 +2,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { availableParallelism } from 'node:os';
@@ -1202,7 +1203,12 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
       orderBy: { sortOrder: 'asc' },
     });
 
-    return { success: true, data: plans };
+    return {
+      success: true,
+      data: plans.map((plan) => hasUnlimitedContactsAndMessages(plan.tier)
+        ? { ...plan, maxContacts: -1, maxMessagesPerMonth: -1, maxContactsPerCampaign: -1 }
+        : plan),
+    };
   });
 
   app.post('/plans', async (request, reply) => {
@@ -1217,7 +1223,16 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
     const body = schema.parse(request.body);
 
     const plan = await app.prisma.plan.create({
-      data: body,
+      data: {
+        ...body,
+        ...(hasUnlimitedContactsAndMessages(body.tier) ? {
+          maxContacts: -1,
+          maxMessagesPerMonth: -1,
+          maxContactsPerCampaign: -1,
+          overageContacts: 0,
+          overageMessages: 0,
+        } : {}),
+      },
     });
 
     return reply.status(201).send({ success: true, data: plan });
@@ -1239,7 +1254,7 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
       maxChatbotFlows: z.number().int().min(0).optional(),
       maxCampaigns: z.number().int().min(0).optional(),
       maxSegments: z.number().int().min(0).optional(),
-      maxContactsPerCampaign: z.number().int().min(0).optional(),
+      maxContactsPerCampaign: z.number().int().min(-1).optional(),
       maxTemplates: z.number().int().min(0).optional(),
       maxAPIKeys: z.number().int().min(0).optional(),
       maxCampaignsPerDay: z.number().int().min(0).optional(),
@@ -1262,9 +1277,19 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
       isActive: z.boolean().optional(),
     }).parse(request.body);
 
+    const existingPlan = await app.prisma.plan.findUniqueOrThrow({ where: { id: planId } });
     const plan = await app.prisma.plan.update({
       where: { id: planId },
-      data: body,
+      data: {
+        ...body,
+        ...(hasUnlimitedContactsAndMessages(existingPlan.tier) ? {
+          maxContacts: -1,
+          maxMessagesPerMonth: -1,
+          maxContactsPerCampaign: -1,
+          overageContacts: 0,
+          overageMessages: 0,
+        } : {}),
+      },
     });
 
     await createAuditLog(app.prisma, {
@@ -1279,7 +1304,12 @@ export async function registerSuperadminRoutes(app: FastifyInstance): Promise<vo
       userAgent: request.headers['user-agent'],
     });
 
-    return { success: true, data: plan };
+    return {
+      success: true,
+      data: hasUnlimitedContactsAndMessages(plan.tier)
+        ? { ...plan, maxContacts: -1, maxMessagesPerMonth: -1, maxContactsPerCampaign: -1 }
+        : plan,
+    };
   });
 
   // DELETE a plan

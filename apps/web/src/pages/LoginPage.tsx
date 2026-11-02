@@ -69,7 +69,13 @@ export default function LoginPage() {
       navigate(loggedUser?.isSuperadmin ? '/superadmin' : '/', { replace: true });
     } catch (err: any) {
       const status = err.response?.status;
-      if (status === 401 || status === 400) {
+      const errorCode = err.response?.data?.error?.code;
+      const billingToken = err.response?.data?.data?.billingToken;
+      if (status === 402 && errorCode === 'SUBSCRIPTION_REQUIRED' && billingToken) {
+        sessionStorage.setItem('signupBillingToken', billingToken);
+        navigate('/subscribe', { replace: true });
+        return;
+      } else if (status === 401 || status === 400) {
         setFormError('That email and password combination doesn\'t match our records.');
       } else if (status === 403) {
         setFormError(err.response?.data?.error?.message || 'This account cannot sign in right now.');

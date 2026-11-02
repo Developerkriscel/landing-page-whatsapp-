@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2, Pencil, RefreshCw, X } from 'lucide-react';
 import { api } from '../api/client';
 
+const hasUnlimitedContactsAndMessages = (tier: string) =>
+  tier === 'STARTER' || tier === 'GROWTH' || tier === 'BUSINESS';
+
 interface Plan {
   id: string;
   name: string;
@@ -279,20 +282,27 @@ export default function SuperAdminPlans() {
 
               <section>
                 <h3 className="mb-3 text-sm font-semibold text-ios-dark">Usage limits</h3>
-                <p className="mb-3 text-xs text-ios-muted">Use -1 for unlimited on contacts, messages, phone numbers, team members, and message rate limits.</p>
+                <p className="mb-3 text-xs text-ios-muted">
+                  Starter, Growth, and Business always have unlimited contacts and monthly messages. Use -1 for other unlimited limits.
+                </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {limitFields.map(([key, label]) => (
                     <label key={key} className="text-xs font-medium text-ios-secondary">
                       {label}
-                      <input
-                        required
-                        type="number"
-                        min={['maxContacts', 'maxMessagesPerMonth', 'maxPhoneNumbers', 'maxTeamMembers', 'maxMessagesPerMinute', 'maxMessagesPerHour'].includes(key) ? -1 : 0}
-                        step="1"
-                        value={form[key]}
-                        onChange={(event) => updateForm(key, event.target.value)}
-                        className="input-apple mt-1 w-full"
-                      />
+                      {(() => {
+                        const fixedUnlimited = hasUnlimitedContactsAndMessages(editingPlan?.tier || '')
+                          && ['maxContacts', 'maxMessagesPerMonth', 'maxContactsPerCampaign'].includes(key);
+                        return <input
+                          required
+                          type="number"
+                          min={['maxContacts', 'maxMessagesPerMonth', 'maxPhoneNumbers', 'maxTeamMembers', 'maxMessagesPerMinute', 'maxMessagesPerHour', 'maxContactsPerCampaign'].includes(key) ? -1 : 0}
+                          step="1"
+                          value={fixedUnlimited ? -1 : form[key]}
+                          disabled={fixedUnlimited}
+                          onChange={(event) => updateForm(key, event.target.value)}
+                          className="input-apple mt-1 w-full disabled:bg-ios-gray disabled:text-ios-muted"
+                        />;
+                      })()}
                     </label>
                   ))}
                 </div>

@@ -184,7 +184,7 @@ export default function PricingPage() {
                     onClick={() => navigate('/register')}
                     className="btn-apple btn-wa-green px-4 py-1.5 text-sm"
                   >
-                    Start Free Trial
+                    Sign up
                   </button>
                 </>
               )}
@@ -316,11 +316,15 @@ export default function PricingPage() {
                 <ul className="mt-8 space-y-3">
                   <li className="flex items-start gap-2 text-sm">
                     <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isPopular ? 'text-white' : 'text-apple-green'}`} />
-                    <span className={isPopular ? 'text-white/90' : 'text-primary-apple'}>{formatLimit(plan.maxContacts)} contacts</span>
+                    <span className={isPopular ? 'text-white/90' : 'text-primary-apple'}>
+                      {plan.maxContacts === -1 ? 'Unlimited contacts' : `${formatLimit(plan.maxContacts)} contacts`}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2 text-sm">
                     <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isPopular ? 'text-white' : 'text-apple-green'}`} />
-                    <span className={isPopular ? 'text-white/90' : 'text-primary-apple'}>{formatLimit(plan.maxMessagesPerMonth)} messages/month</span>
+                    <span className={isPopular ? 'text-white/90' : 'text-primary-apple'}>
+                      {plan.maxMessagesPerMonth === -1 ? 'Unlimited messages/month' : `${formatLimit(plan.maxMessagesPerMonth)} messages/month`}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2 text-sm">
                     <Check className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isPopular ? 'text-white' : 'text-apple-green'}`} />
@@ -439,8 +443,8 @@ export default function PricingPage() {
                 a: 'An 18% GST amount is added to the displayed base plan price and itemized before payment.',
               },
               {
-                q: 'Are Meta WhatsApp charges included?',
-                a: 'Yes. Each plan includes a defined monthly message allowance. Applicable Meta WhatsApp conversation charges for messages within your allowance are included in the subscription price. No additional per-message charges are applied for usage within the allowance.',
+                q: 'Are contacts or monthly messages capped?',
+                a: 'Starter, Growth, and Business have no monthly contact or message cap. Sending messages still uses workspace credits, with applicable rates shown in Billing.',
               },
               {
                 q: 'Can I message my customers?',
@@ -477,13 +481,13 @@ export default function PricingPage() {
             <div className="relative z-10">
               <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">Ready to get started?</h2>
               <p className="text-xl text-white/80 mb-8">
-                Start your 14-day free trial today. No credit card required.
+                Create an account to get started with Kriscel WA.
               </p>
               <button
                 onClick={() => navigate(user ? '/billing' : '/register')}
                 className="btn-apple bg-white text-wa-green hover:bg-white/90 px-8 py-4 text-lg shadow-apple"
               >
-                Start Free Trial
+                {user ? 'View billing' : 'Sign up'}
               </button>
             </div>
           </div>
@@ -494,9 +498,9 @@ export default function PricingPage() {
       <footer className="relative py-12 text-center">
         <p className="mx-auto mb-5 max-w-3xl px-4 text-xs text-secondary-apple">
           Plan prices are shown in INR using the configured USD-to-INR rate. Checkout adds 18% GST to
-          the base plan price and shows the tax amount and total before payment. Each plan includes a
-          monthly message allowance; applicable Meta WhatsApp conversation charges are included within
-          the plan price for messages sent within that allowance.
+          the base plan price and shows the tax amount and total before payment. Starter, Growth, and
+          Business plans have unlimited contacts and monthly message volume. Sending messages uses
+          workspace credits at the rates shown in Billing.
         </p>
         <nav aria-label="Legal and business information" className="mb-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
           <Link to="/contact" className="text-secondary-apple hover:text-wa-green">Contact Us</Link>

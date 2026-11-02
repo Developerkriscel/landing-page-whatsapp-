@@ -2,6 +2,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 import { z } from 'zod';
 import { syncTemplatesFromMeta, submitTemplateToMeta, fetchMetaTemplates, resolveEffectiveWabaId, resolveWabaToken, uploadTemplateHeaderSample, localTemplateStatus } from '../services/metaTemplate.js';
 import { decryptSecret } from '../services/credentialEncryption.js';
@@ -1037,7 +1038,7 @@ export async function registerTenantRoutes(app: FastifyInstance): Promise<void> 
     });
 
     if (tenant?.plan) {
-      const max = tenant.plan.maxContacts;
+      const max = hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxContacts;
       const current = await app.prisma.contact.count({
         where: { tenantId: request.authUser.tenantId, isActive: true },
       });

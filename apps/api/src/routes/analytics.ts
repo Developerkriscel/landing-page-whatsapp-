@@ -5,6 +5,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 import { checkPlanLimits, enforceContactLimit, enforceMessageLimit } from '../services/billingEnforcement.js';
 
 export async function registerInsightsRoutes(app: FastifyInstance): Promise<void> {
@@ -542,19 +543,26 @@ export async function registerInsightsRoutes(app: FastifyInstance): Promise<void
     ]);
 
     // Calculate usage percentages
-    const maxContacts = tenant.plan?.maxContacts || 500;
-    const maxMessages = tenant.plan?.maxMessagesPerMonth || 5000;
+    const unlimitedContactsAndMessages = tenant.plan
+      ? hasUnlimitedContactsAndMessages(tenant.plan.tier)
+      : false;
+    const maxContacts = tenant.plan
+      ? unlimitedContactsAndMessages ? -1 : tenant.plan.maxContacts
+      : 500;
+    const maxMessages = tenant.plan
+      ? unlimitedContactsAndMessages ? -1 : tenant.plan.maxMessagesPerMonth
+      : 5000;
 
     const usage = {
       contacts: {
         used: totalContacts,
         limit: maxContacts,
-        percentage: Math.round((totalContacts / maxContacts) * 100),
+        percentage: maxContacts === -1 ? 0 : Math.round((totalContacts / maxContacts) * 100),
       },
       messages: {
         used: totalMessages,
         limit: maxMessages,
-        percentage: Math.round((totalMessages / maxMessages) * 100),
+        percentage: maxMessages === -1 ? 0 : Math.round((totalMessages / maxMessages) * 100),
       },
       campaigns: {
         used: totalCampaigns,

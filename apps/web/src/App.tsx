@@ -33,6 +33,7 @@ import CreateTemplatePage from './pages/CreateTemplatePage';
 import CreditsPage from './pages/CreditsPage';
 import PolicyPage from './pages/PolicyPage';
 import ContactPage from './pages/ContactPage';
+import SubscribePage from './pages/SubscribePage';
 
 // Components
 import Layout from './components/Layout';
@@ -173,6 +174,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/subscribe" element={<SubscribePage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/terms" element={<PolicyPage type="terms" />} />
         <Route path="/privacy" element={<PolicyPage type="privacy" />} />

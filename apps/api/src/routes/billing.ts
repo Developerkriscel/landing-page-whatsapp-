@@ -21,6 +21,7 @@ import type Stripe from 'stripe';
 import { getCurrencyContext } from '../services/currency.js';
 import { EXCHANGE_RATES } from '../services/currencyService.js';
 import { CASHFREE_PLAN_GST_RATE_PERCENT, quoteCashfreePlanPrice } from '../services/cashfreePlanPricing.js';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 
 const createCheckoutSchema = z.object({
   planTier: z.enum(['STARTER', 'GROWTH', 'BUSINESS']),
@@ -82,8 +83,18 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
         trialEndsAt: tenant.trialEndsAt,
         currentPeriodEnd: tenant.messageResetAt,
         usage: {
-          contacts: { current: tenant.currentContacts, limit: tenant.plan?.maxContacts || 0 },
-          messages: { current: tenant.currentMessages, limit: tenant.plan?.maxMessagesPerMonth || 0 },
+          contacts: {
+            current: tenant.currentContacts,
+            limit: tenant.plan
+              ? hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxContacts
+              : 0,
+          },
+          messages: {
+            current: tenant.currentMessages,
+            limit: tenant.plan
+              ? hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxMessagesPerMonth
+              : 0,
+          },
         },
         stripeCustomerId: tenant.stripeCustomerId,
         subscriptionId: tenant.stripeSubId,
@@ -120,8 +131,12 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
       data: plans.map((plan) => {
         const monthly = quoteCashfreePlanPrice(Number(plan.monthlyPrice), usdToInr);
         const annual = quoteCashfreePlanPrice(Number(plan.annualPrice), usdToInr);
+        const unlimitedContactsAndMessages = hasUnlimitedContactsAndMessages(plan.tier);
         return {
           ...plan,
+          maxContacts: unlimitedContactsAndMessages ? -1 : plan.maxContacts,
+          maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : plan.maxMessagesPerMonth,
+          maxContactsPerCampaign: unlimitedContactsAndMessages ? -1 : plan.maxContactsPerCampaign,
           cashfreeGstRatePercent: CASHFREE_PLAN_GST_RATE_PERCENT,
           cashfreeMonthlyBaseInr: monthly.baseMinor / 100,
           cashfreeMonthlyGstInr: monthly.gstMinor / 100,
@@ -130,8 +145,8 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
           cashfreeAnnualGstInr: annual.gstMinor / 100,
           cashfreeAnnualTotalInr: annual.totalMinor / 100,
           limits: {
-            maxContacts: plan.maxContacts,
-            maxMessagesPerMonth: plan.maxMessagesPerMonth,
+            maxContacts: unlimitedContactsAndMessages ? -1 : plan.maxContacts,
+            maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : plan.maxMessagesPerMonth,
             maxPhoneNumbers: plan.maxPhoneNumbers,
             maxTeamMembers: plan.maxTeamMembers,
             maxCampaigns: plan.maxCampaigns,
@@ -159,6 +174,24 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
         };
       }),
     };
+  });
+
+  app.put('/billing/setup/phone', { preHandler: [app.requirePermission('billing', 'update')] }, async (request, reply) => {
+    if (!request.authUser.billingOnly) {
+      return reply.status(403).send({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'This setup action is only available before subscription purchase.' },
+      });
+    }
+    const { phone } = z.object({
+      phone: z.string().trim().refine((value) => {
+        const digitCount = value.replace(/\D/g, '').length;
+        return digitCount >= 10 && digitCount <= 15;
+      }, 'Enter a valid phone number with 10 to 15 digits'),
+    }).parse(request.body);
+
+    await app.prisma.user.update({ where: { id: request.authUser.id }, data: { phone } });
+    return { success: true, data: { phone } };
   });
 
   // ============================================
@@ -282,6 +315,9 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
             email: customer.email,
             phone: customer.phone,
           },
+          returnUrl: request.authUser.billingOnly
+            ? `${(process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '')}/subscribe?cashfree_order_id={order_id}`
+            : undefined,
         });
         return { success: true, data: order };
       } catch (error: any) {
@@ -297,8 +333,8 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
     let customerId = tenant.stripeCustomerId;
     if (!customerId) {
       const customer = await createCustomer({
-        email: tenant.billingEmail || `${tenant.id}@whatsapp-saas.com`,
-        name: tenant.name,
+        email: tenant.billingEmail || request.authUser.email,
+        name: tenant.billingName || tenant.name,
         tenantId: tenant.id,
       });
       customerId = customer.id;
@@ -318,13 +354,15 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
     }
 
     // Create checkout session
-    const baseUrl = process.env.APP_URL || 'http://localhost:5173';
+    const baseUrl = (process.env.APP_URL || 'http://localhost:5173').replace(/\/$/, '');
     const session = await createCheckoutSession({
       customerId,
       priceId,
       tenantId: tenant.id,
-      successUrl: `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${baseUrl}/billing/cancel`,
+      successUrl: request.authUser.billingOnly
+        ? `${baseUrl}/subscribe?session_id={CHECKOUT_SESSION_ID}`
+        : `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: request.authUser.billingOnly ? `${baseUrl}/subscribe` : `${baseUrl}/billing/cancel`,
     });
 
     return {
@@ -732,11 +770,15 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
       data: {
         contacts: {
           current: contactCount,
-          limit: tenant.plan?.maxContacts || 500,
+          limit: tenant.plan
+            ? hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxContacts
+            : 500,
         },
         messages: {
           current: messageCount,
-          limit: tenant.plan?.maxMessagesPerMonth || 5000,
+          limit: tenant.plan
+            ? hasUnlimitedContactsAndMessages(tenant.plan.tier) ? -1 : tenant.plan.maxMessagesPerMonth
+            : 5000,
           daysLeft,
         },
         campaigns: {

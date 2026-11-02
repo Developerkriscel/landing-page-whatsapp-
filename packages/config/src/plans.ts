@@ -7,6 +7,10 @@
 
 export type PlanTier = 'STARTER' | 'GROWTH' | 'BUSINESS' | 'ENTERPRISE';
 
+export function hasUnlimitedContactsAndMessages(tier: string): boolean {
+  return tier === 'STARTER' || tier === 'GROWTH' || tier === 'BUSINESS';
+}
+
 export interface PlanLimits {
   maxContacts: number;
   maxMessagesPerMonth: number;
@@ -85,14 +89,14 @@ export const PLANS: PricingPlan[] = [
     annualPrice: 470,
     currency: 'USD',
     limits: {
-      maxContacts: 500,
-      maxMessagesPerMonth: 5000,
+      maxContacts: -1,
+      maxMessagesPerMonth: -1,
       maxPhoneNumbers: 1,
       maxTeamMembers: 3,
       maxChatbotFlows: 1,
       maxCampaigns: 10,
       maxSegments: 5,
-      maxContactsPerCampaign: 500,
+      maxContactsPerCampaign: -1,
       maxTemplates: 10,
       maxAPIKeys: 1,
       maxCampaignsPerDay: 5,
@@ -115,8 +119,8 @@ export const PLANS: PricingPlan[] = [
       bulkExport: true,
     },
     overage: {
-      contacts: 0.02,
-      messages: 0.008,
+      contacts: 0,
+      messages: 0,
     },
     sortOrder: 1,
     isPopular: false,
@@ -132,14 +136,14 @@ export const PLANS: PricingPlan[] = [
     annualPrice: 1430,
     currency: 'USD',
     limits: {
-      maxContacts: 2500,
-      maxMessagesPerMonth: 25000,
+      maxContacts: -1,
+      maxMessagesPerMonth: -1,
       maxPhoneNumbers: 3,
       maxTeamMembers: 10,
       maxChatbotFlows: 10,
       maxCampaigns: 50,
       maxSegments: 25,
-      maxContactsPerCampaign: 2500,
+      maxContactsPerCampaign: -1,
       maxTemplates: 50,
       maxAPIKeys: 5,
       maxCampaignsPerDay: 20,
@@ -162,8 +166,8 @@ export const PLANS: PricingPlan[] = [
       bulkExport: true,
     },
     overage: {
-      contacts: 0.015,
-      messages: 0.006,
+      contacts: 0,
+      messages: 0,
     },
     sortOrder: 2,
     isPopular: true,
@@ -179,14 +183,14 @@ export const PLANS: PricingPlan[] = [
     annualPrice: 3830,
     currency: 'USD',
     limits: {
-      maxContacts: 10000,
-      maxMessagesPerMonth: 100000,
+      maxContacts: -1,
+      maxMessagesPerMonth: -1,
       maxPhoneNumbers: 10,
       maxTeamMembers: 25,
       maxChatbotFlows: 50,
       maxCampaigns: 200,
       maxSegments: 100,
-      maxContactsPerCampaign: 10000,
+      maxContactsPerCampaign: -1,
       maxTemplates: 200,
       maxAPIKeys: 20,
       maxCampaignsPerDay: 100,
@@ -209,8 +213,8 @@ export const PLANS: PricingPlan[] = [
       bulkExport: true,
     },
     overage: {
-      contacts: 0.01,
-      messages: 0.004,
+      contacts: 0,
+      messages: 0,
     },
     sortOrder: 3,
     isPopular: false,

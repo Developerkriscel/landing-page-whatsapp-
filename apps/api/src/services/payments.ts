@@ -319,7 +319,7 @@ export async function createRazorpayPlanOrder(
 
 export async function createCashfreePlanOrder(
   prisma: PrismaClient,
-  input: CreatePlanOrderInput,
+  input: CreatePlanOrderInput & { returnUrl?: string },
 ): Promise<{ orderId: string; provider: string; paymentSessionId: string; amountMinor: number; currency: string; testMode: boolean }> {
   const { provider, publicKey, secret } = await activeProvider(prisma);
   if (provider.provider !== 'cashfree') {
@@ -358,7 +358,7 @@ export async function createCashfreePlanOrder(
         customer_phone: phone,
       },
       order_meta: {
-        return_url: `${appUrl}/billing?cashfree_order_id={order_id}`,
+        return_url: input.returnUrl || `${appUrl}/billing?cashfree_order_id={order_id}`,
       },
       order_note: `${input.planName} plan (${input.interval})`,
     }),

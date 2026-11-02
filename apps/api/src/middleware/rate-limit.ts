@@ -46,9 +46,9 @@ const PLAN_ALLOWANCES: Record<string, number> = {
 };
 
 export const PLAN_MESSAGE_LIMITS: Record<string, number> = {
-  STARTER: 5000,
-  GROWTH: 25000,
-  BUSINESS: 100000,
+  STARTER: -1,
+  GROWTH: -1,
+  BUSINESS: -1,
   ENTERPRISE: -1, // Unlimited
 };
 
@@ -100,7 +100,7 @@ export function getMessageRateLimit(planTier: string | undefined): {
  * Get monthly message limit based on plan
  */
 export function getMonthlyMessageLimit(planTier: string | undefined): number {
-  return PLAN_MESSAGE_LIMITS[planTier || 'STARTER'] || 5000;
+  return PLAN_MESSAGE_LIMITS[planTier || 'STARTER'] ?? -1;
 }
 
 /**

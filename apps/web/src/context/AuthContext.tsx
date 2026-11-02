@@ -56,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (response.data.success) {
       const { user: userData, accessToken } = response.data.data;
 
+      sessionStorage.removeItem('signupBillingToken');
+      sessionStorage.removeItem('signupSelectedPlan');
+      sessionStorage.removeItem('signupPhone');
+
       // Refresh token is set server-side as an httpOnly cookie — only the
       // short-lived access token and user profile live in localStorage.
       localStorage.setItem('accessToken', accessToken);
@@ -72,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.post('/auth/logout').catch(() => {});
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('signupBillingToken');
+    sessionStorage.removeItem('signupSelectedPlan');
+    sessionStorage.removeItem('signupPhone');
     setUser(null);
   }, []);
 

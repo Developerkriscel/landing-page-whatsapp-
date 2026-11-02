@@ -8,7 +8,7 @@ type PolicyPageProps = {
 const sections = {
   terms: {
     title: 'Terms and Conditions',
-    updated: 'Last updated: October 30, 2026',
+    updated: 'Last updated: November 2, 2026',
     introduction:
       'These Terms and Conditions govern your access to and use of Kriscel WA, operated by Kriscel Tech Private Limited (CIN: U63121DL2026PTC462568). By creating an account, purchasing a plan, or using the service, you agree to these terms.',
     content: [
@@ -20,10 +20,10 @@ const sections = {
         ],
       },
       {
-        heading: 'Plans, billing, and included messaging',
+        heading: 'Plans, billing, and message credits',
         paragraphs: [
           'Plan features, limits, price, currency, and billing interval are shown before you confirm a purchase. Plan prices charged in INR use the configured USD-to-INR conversion rate. Checkout adds GST at the applicable rate (currently 18%) to the converted plan price and shows the base price, GST amount, and total before payment.',
-          `Each plan includes a defined monthly message allowance. Applicable Meta WhatsApp conversation charges for messages sent within your plan's allowance are included in the subscription price. Messages are counted against your plan limit as they are sent. Once the monthly allowance is reached, further outbound messages are blocked until the allowance resets or you upgrade to a higher plan. No additional per-message charges are applied beyond the subscription price for usage within the allowance.`,
+          'Starter, Growth, and Business plans have no monthly cap on saved contacts or message volume. Sending messages uses workspace credits at the applicable rates displayed in Billing. Message delivery also remains subject to WhatsApp and Meta policies and technical rate limits.',
           'Recurring subscription purchases renew for the selected billing interval until cancelled. You can request cancellation from the Billing page in your account. Cancellation takes effect at the end of the current paid billing period, and access continues until then.',
           'Prepaid plan purchases are one-time payments for the selected one-month or one-year term and do not automatically renew. Access ends when the paid term expires unless you purchase another term.',
           'Payment processing is handled by the payment provider shown at checkout (currently Razorpay or Cashfree). You authorize the applicable provider to process the payment for the amount displayed before you confirm. By completing a purchase, you acknowledge that you have read and agree to these Terms and Conditions, the Privacy Policy, and the Return/Refund/Cancellation Policy.',

@@ -2,6 +2,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { handleWebhookVerification, parseIncomingMessage, isStopKeyword } from '@whatsapp-saas/config/guards';
+import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 import { getDefaultConfig } from '@whatsapp-saas/config/guards';
 import { broadcastToTenant, broadcastMessageStatus } from './sse.js';
 import { getCurrencyContext } from '../services/currency.js';
@@ -100,8 +101,12 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
       data: plans.map((plan) => {
         const monthly = quoteCashfreePlanPrice(Number(plan.monthlyPrice), usdToInr);
         const annual = quoteCashfreePlanPrice(Number(plan.annualPrice), usdToInr);
+        const unlimitedContactsAndMessages = hasUnlimitedContactsAndMessages(plan.tier);
         return {
           ...plan,
+          maxContacts: unlimitedContactsAndMessages ? -1 : plan.maxContacts,
+          maxMessagesPerMonth: unlimitedContactsAndMessages ? -1 : plan.maxMessagesPerMonth,
+          maxContactsPerCampaign: unlimitedContactsAndMessages ? -1 : plan.maxContactsPerCampaign,
           cashfreeGstRatePercent: CASHFREE_PLAN_GST_RATE_PERCENT,
           cashfreeMonthlyBaseInr: monthly.baseMinor / 100,
           cashfreeMonthlyGstInr: monthly.gstMinor / 100,

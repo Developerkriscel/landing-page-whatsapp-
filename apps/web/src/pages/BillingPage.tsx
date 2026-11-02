@@ -285,10 +285,12 @@ export default function BillingPage() {
   const currentTier = billing?.plan?.tier;
   const prepaidExpired = !!billing?.planExpiresAt && new Date(billing.planExpiresAt).getTime() <= Date.now();
   const usage = billing?.usage;
+  const contactsLimit = usage?.contacts?.limit ?? 0;
+  const messagesLimit = usage?.messages?.limit ?? 0;
 
   // Helper functions
   const formatLimit = (val: number) => {
-    if (val === -1) return '∞';
+    if (val === -1) return 'Unlimited';
     if (val >= 1000) return `${(val / 1000).toFixed(0)}K`;
     return val.toString();
   };
@@ -487,20 +489,20 @@ export default function BillingPage() {
                     {(usage?.contacts?.current || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-ios-muted">
-                    {getUsagePercent(usage?.contacts?.current || 0, usage?.contacts?.limit || 0)}% used
+                    {contactsLimit === -1 ? 'Unlimited contacts' : `${getUsagePercent(usage?.contacts?.current || 0, contactsLimit)}% used`}
                   </p>
                 </div>
               </div>
-              <div className="relative h-3 bg-ios-gray rounded-full overflow-hidden">
+              {contactsLimit !== -1 && <div className="relative h-3 bg-ios-gray rounded-full overflow-hidden">
                 <div
-                  className={`absolute h-full transition-all ${getUsageColor(getUsagePercent(usage?.contacts?.current || 0, usage?.contacts?.limit || 0))}`}
-                  style={{ width: `${Math.min(100, getUsagePercent(usage?.contacts?.current || 0, usage?.contacts?.limit || 0))}%` }}
+                  className={`absolute h-full transition-all ${getUsageColor(getUsagePercent(usage?.contacts?.current || 0, contactsLimit))}`}
+                  style={{ width: `${Math.min(100, getUsagePercent(usage?.contacts?.current || 0, contactsLimit))}%` }}
                 />
-              </div>
-              {getUsageWarning(getUsagePercent(usage?.contacts?.current || 0, usage?.contacts?.limit || 0), 'contacts') && (
+              </div>}
+              {contactsLimit !== -1 && getUsageWarning(getUsagePercent(usage?.contacts?.current || 0, contactsLimit), 'contacts') && (
                 <p className="text-xs text-apple-orange mt-2 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  {getUsageWarning(getUsagePercent(usage?.contacts?.current || 0, usage?.contacts?.limit || 0), 'contacts')}
+                  {getUsageWarning(getUsagePercent(usage?.contacts?.current || 0, contactsLimit), 'contacts')}
                 </p>
               )}
             </div>
@@ -515,7 +517,7 @@ export default function BillingPage() {
                   <div>
                     <p className="font-medium text-ios-dark">Messages</p>
                     <p className="text-sm text-ios-muted">
-                      {usage?.messages?.daysLeft || 0} days left this month
+                    {messagesLimit === -1 ? 'Unlimited monthly messages' : `${usage?.messages?.daysLeft || 0} days left this month`}
                     </p>
                   </div>
                 </div>
@@ -528,20 +530,20 @@ export default function BillingPage() {
                   </p>
                 </div>
               </div>
-              <div className="relative h-3 bg-ios-gray rounded-full overflow-hidden">
+              {messagesLimit !== -1 && <div className="relative h-3 bg-ios-gray rounded-full overflow-hidden">
                 <div
-                  className={`absolute h-full transition-all ${getUsageColor(getUsagePercent(usage?.messages?.current || 0, usage?.messages?.limit || 0))}`}
-                  style={{ width: `${Math.min(100, getUsagePercent(usage?.messages?.current || 0, usage?.messages?.limit || 0))}%` }}
+                  className={`absolute h-full transition-all ${getUsageColor(getUsagePercent(usage?.messages?.current || 0, messagesLimit))}`}
+                  style={{ width: `${Math.min(100, getUsagePercent(usage?.messages?.current || 0, messagesLimit))}%` }}
                 />
-              </div>
-              {getUsageWarning(getUsagePercent(usage?.messages?.current || 0, usage?.messages?.limit || 0), 'messages') && (
+              </div>}
+              {messagesLimit !== -1 && getUsageWarning(getUsagePercent(usage?.messages?.current || 0, messagesLimit), 'messages') && (
                 <p className="text-xs text-apple-orange mt-2 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  {getUsageWarning(getUsagePercent(usage?.messages?.current || 0, usage?.messages?.limit || 0), 'messages')}
+                  {getUsageWarning(getUsagePercent(usage?.messages?.current || 0, messagesLimit), 'messages')}
                 </p>
               )}
               {/* Usage projection */}
-              {usage?.messages?.daysLeft && usage?.messages?.daysLeft > 0 && (
+              {messagesLimit !== -1 && usage?.messages?.daysLeft && usage?.messages?.daysLeft > 0 && (
                 <div className="mt-3 p-3 bg-ios-gray/50 rounded-apple-lg">
                   <p className="text-xs text-ios-muted flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
@@ -911,8 +913,8 @@ export default function BillingPage() {
             )}
 
             <p className="text-xs text-ios-muted mb-3">
-              Each plan includes a monthly message allowance. Applicable Meta WhatsApp conversation
-              charges for messages within the allowance are included in the subscription price.
+              Starter, Growth, and Business include unlimited monthly message volume. Sending messages
+              uses workspace credits at the rates shown in Billing.
             </p>
 
             <label className="flex items-start gap-2 mb-4 cursor-pointer">

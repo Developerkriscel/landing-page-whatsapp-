@@ -126,7 +126,7 @@ export const createSegmentSchema = z.object({
 
 export const checkoutSchema = z.object({
   planTier: z.enum(['STARTER', 'GROWTH', 'BUSINESS']),
-  interval: z.enum(['monthly', 'annual']).default('monthly'),
+  interval: z.enum(['monthly', 'six_month', 'annual']).default('monthly'),
 });
 
 export const updatePlanSchema = z.object({

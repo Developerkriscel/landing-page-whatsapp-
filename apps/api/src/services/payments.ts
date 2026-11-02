@@ -36,7 +36,7 @@ export interface CreatePlanOrderInput {
   planId: string;
   planTier: string;
   planName: string;
-  interval: 'monthly' | 'annual';
+  interval: 'monthly' | 'six_month' | 'annual';
   amountUsd: number;
   customer: CheckoutCustomer;
 }
@@ -85,8 +85,8 @@ function cashfreeHeaders(publicKey: string, secret: string): Record<string, stri
   };
 }
 
-function planTermEnd(start: Date, interval: 'monthly' | 'annual'): Date {
-  const months = interval === 'annual' ? 12 : 1;
+function planTermEnd(start: Date, interval: 'monthly' | 'six_month' | 'annual'): Date {
+  const months = interval === 'annual' ? 12 : interval === 'six_month' ? 6 : 1;
   const monthIndex = start.getMonth() + months;
   const year = start.getFullYear() + Math.floor(monthIndex / 12);
   const month = monthIndex % 12;
@@ -463,7 +463,7 @@ export async function confirmPayment(
     return { credited: false, credits: 0, reason: 'The amount paid does not match the order.' };
   }
 
-  const breakdown = order.breakdown as { kind?: string; planId?: string; interval?: 'monthly' | 'annual' } | null;
+  const breakdown = order.breakdown as { kind?: string; planId?: string; interval?: 'monthly' | 'six_month' | 'annual' } | null;
   if (breakdown?.kind === 'PLAN_PURCHASE') {
     return activateRazorpayPlan(prisma, order, args.paymentId, breakdown);
   }
@@ -475,7 +475,7 @@ async function activateRazorpayPlan(
   prisma: PrismaClient,
   order: { id: string; tenantId: string; providerOrderId: string; credits: number },
   paymentId: string,
-  breakdown: { planId?: string; interval?: 'monthly' | 'annual' },
+  breakdown: { planId?: string; interval?: 'monthly' | 'six_month' | 'annual' },
 ): Promise<{ credited: boolean; credits: number; balanceAfter?: number; activated?: boolean; reason?: string }> {
   if (!breakdown.planId || !breakdown.interval) {
     await prisma.paymentOrder.update({
@@ -620,7 +620,7 @@ export async function confirmCashfreeOrder(
   }
 
   const paymentId = String(successfulPayment.cf_payment_id);
-  const breakdown = order.breakdown as { kind?: string; planId?: string; interval?: 'monthly' | 'annual' } | null;
+  const breakdown = order.breakdown as { kind?: string; planId?: string; interval?: 'monthly' | 'six_month' | 'annual' } | null;
   if (breakdown?.kind === 'PLAN_PURCHASE') {
     if (!breakdown.planId || !breakdown.interval) {
       await prisma.paymentOrder.update({

@@ -126,7 +126,7 @@ export async function handleSubscriptionUpsert(app: FastifyInstance, subscriptio
 
   // Determine plan tier from price
   const priceId = subscription.items.data[0]?.price.id;
-  const planTier = mapPriceToPlanTier(priceId);
+  const planTier = subscription.metadata?.planTier || mapPriceToPlanTier(priceId);
 
   // Get plan from database
   const plan = await app.prisma.plan.findUnique({

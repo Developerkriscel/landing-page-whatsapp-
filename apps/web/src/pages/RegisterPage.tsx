@@ -4,14 +4,16 @@
  */
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { Eye, EyeOff, Lock, Mail, Building, CheckCircle } from 'lucide-react';
+import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
 
 const STEPS = ['Account', 'Workspace', 'Subscription'];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +24,7 @@ export default function RegisterPage() {
     password: '',
     company: '',
     phone: '',
-    plan: 'STARTER',
+    plan: searchParams.get('plan')?.toUpperCase() || 'STARTER',
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -222,7 +224,7 @@ export default function RegisterPage() {
                             : 'border-black/10 text-ios-secondary hover:border-black/30'
                         }`}
                       >
-                        {plan}
+                        {getIntervalLabel(getPlanInterval(plan))}
                       </button>
                     ))}
                   </div>

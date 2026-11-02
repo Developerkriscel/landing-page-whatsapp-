@@ -3,13 +3,13 @@
  * Apple Design System
  */
 
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Check, MessageSquare, Users, Bot, Zap, Shield } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import kriscelKSrc from '../assets/kriscel-k.jpeg';
+import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
 
 const CASHFREE_PLAN_GST_RATE_PERCENT = 18;
 const FALLBACK_USD_TO_INR_RATE = 88.5;
@@ -81,7 +81,6 @@ const features = [
 export default function PricingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
 
   const { data: plansData } = useQuery<{ data: Plan[] }>({
     queryKey: ['public-plans'],
@@ -135,11 +134,11 @@ export default function PricingPage() {
     return val.toLocaleString();
   };
 
-  const handleSelect = (tier: string) => {
+  const handleSelect = (tier: string, interval: 'monthly' | 'six_month' | 'annual') => {
     if (user) {
       navigate(`/billing?plan=${tier}&interval=${interval}`);
     } else {
-      navigate(`/register?plan=${tier}`);
+      navigate(`/register?plan=${tier}&interval=${interval}`);
     }
   };
 
@@ -203,32 +202,6 @@ export default function PricingPage() {
           chatbot automation, and team collaboration.
         </p>
 
-        {/* Apple Billing Toggle */}
-        <div className="inline-flex bg-apple-bg-tertiary rounded-xl p-1 mb-8">
-          <button
-            onClick={() => setInterval('monthly')}
-            className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
-              interval === 'monthly'
-                ? 'bg-white shadow-apple text-primary-apple'
-                : 'text-secondary-apple hover:text-primary-apple'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setInterval('annual')}
-            className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
-              interval === 'annual'
-                ? 'bg-white shadow-apple text-primary-apple'
-                : 'text-secondary-apple hover:text-primary-apple'
-            }`}
-          >
-            Annual
-            <span className="ml-2 px-2 py-0.5 bg-apple-green/10 text-apple-green text-xs rounded-full font-semibold">
-              Save 20%
-            </span>
-          </button>
-        </div>
       </section>
 
       {/* Pricing Cards */}
@@ -236,6 +209,13 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.filter(p => p.tier !== 'ENTERPRISE').map((plan) => {
             const isPopular = plan.tier === 'GROWTH';
+            const interval = getPlanInterval(plan.tier);
+            const monthlyQuote = cashfreeQuote(
+              plan.monthlyPrice,
+              plan.cashfreeMonthlyBaseInr,
+              plan.cashfreeMonthlyGstInr,
+              plan.cashfreeMonthlyTotalInr,
+            );
             const quote = interval === 'monthly'
               ? cashfreeQuote(
                   plan.monthlyPrice,
@@ -243,6 +223,8 @@ export default function PricingPage() {
                   plan.cashfreeMonthlyGstInr,
                   plan.cashfreeMonthlyTotalInr,
                 )
+              : interval === 'six_month'
+              ? monthlyQuote && { baseInr: monthlyQuote.baseInr * 6, gstInr: monthlyQuote.gstInr * 6, totalInr: monthlyQuote.totalInr * 6 }
               : cashfreeQuote(
                   plan.annualPrice,
                   plan.cashfreeAnnualBaseInr,
@@ -250,13 +232,8 @@ export default function PricingPage() {
                   plan.cashfreeAnnualTotalInr,
                 );
             const price = quote
-              ? interval === 'monthly' ? quote.totalInr : quote.totalInr / 12
+              ? interval === 'monthly' ? quote.totalInr : interval === 'six_month' ? quote.totalInr / 6 : quote.totalInr / 12
               : null;
-            const gstRatePercent = typeof plan.cashfreeGstRatePercent === 'number' &&
-              Number.isFinite(plan.cashfreeGstRatePercent)
-              ? plan.cashfreeGstRatePercent
-              : CASHFREE_PLAN_GST_RATE_PERCENT;
-
             return (
               <div
                 key={plan.id}
@@ -273,10 +250,14 @@ export default function PricingPage() {
                 )}
 
                 <h3 className={`text-xl font-bold ${isPopular ? 'text-white' : 'text-primary-apple'}`}>
-                  {plan.name}
+                  {getIntervalLabel(interval)}
                 </h3>
                 <p className={`mt-2 min-h-[48px] text-sm ${isPopular ? 'text-white/80' : 'text-secondary-apple'}`}>
                   {plan.description}
+                </p>
+
+                <p className={`mt-5 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isPopular ? 'bg-white/15 text-white' : 'bg-wa-green/10 text-wa-green'}`}>
+                  {interval === 'monthly' ? 'Monthly billing' : interval === 'six_month' ? '6-Month billing' : '12-Month billing'}
                 </p>
 
                 <div className="mt-6">
@@ -287,30 +268,21 @@ export default function PricingPage() {
                     <>
                       <span className={`text-sm ${isPopular ? 'text-white/70' : 'text-secondary-apple'}`}>/month</span>
                       <div className={`mt-2 space-y-1 text-xs ${isPopular ? 'text-white/80' : 'text-secondary-apple'}`}>
-                        <p>
-                          Plan price {formatInr(quote!.baseInr)}{interval === 'monthly' ? '/month' : '/year'}
-                        </p>
-                        <p>
-                          GST ({gstRatePercent}%) {formatInr(quote!.gstInr)}{interval === 'monthly' ? '/month' : '/year'}
-                        </p>
-                        {interval === 'annual' && <p>Annual total {formatInr(quote!.totalInr)}/year</p>}
-                        <p>
-                          Total {formatInr(quote!.totalInr)}{interval === 'monthly' ? '/month' : '/year'} including GST
-                        </p>
+                        <p>{formatInr(quote!.totalInr)} billed every {interval === 'monthly' ? 'month' : interval === 'six_month' ? '6 months' : '12 months'}, including GST</p>
                       </div>
                     </>
                   )}
                 </div>
 
                 <button
-                  onClick={() => handleSelect(plan.tier)}
+                  onClick={() => handleSelect(plan.tier, interval)}
                   className={`w-full mt-6 py-3 rounded-xl font-medium transition-all ${
                     isPopular
                       ? 'bg-white text-wa-green hover:bg-white/90 shadow-apple'
                       : 'bg-wa-gradient text-white hover:shadow-wa-green'
                   }`}
                 >
-                  View plan
+                  Buy Plan
                 </button>
 
                 <ul className="mt-8 space-y-3">

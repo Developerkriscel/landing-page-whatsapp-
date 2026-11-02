@@ -67,8 +67,11 @@ export async function getCustomer(customerId: string): Promise<Stripe.Customer |
 
 export async function createCheckoutSession(params: {
   customerId: string;
-  priceId: string;
+  priceId?: string;
+  sixMonthPrice?: { amountUsd: number; planName: string };
   tenantId: string;
+  planTier?: string;
+  interval?: 'monthly' | 'six_month' | 'annual';
   successUrl: string;
   cancelUrl: string;
 }): Promise<{ url: string; sessionId: string }> {
@@ -80,15 +83,33 @@ export async function createCheckoutSession(params: {
     };
   }
 
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = params.sixMonthPrice
+    ? [{
+        price_data: {
+          currency: 'usd',
+          unit_amount: Math.round(params.sixMonthPrice.amountUsd * 100),
+          product_data: { name: `${params.planName} plan (6 months)` },
+          recurring: { interval: 'month', interval_count: 6 },
+        },
+        quantity: 1,
+      }]
+    : params.priceId ? [{ price: params.priceId, quantity: 1 }] : [];
+  if (!lineItems.length) throw new Error('A Stripe price must be configured for this plan term.');
+
+  const metadata = {
+    tenantId: params.tenantId,
+    ...(params.planTier ? { planTier: params.planTier } : {}),
+    ...(params.interval ? { interval: params.interval } : {}),
+  };
   const session = await stripe.checkout.sessions.create({
     customer: params.customerId,
-    line_items: [{ price: params.priceId, quantity: 1 }],
+    line_items: lineItems,
     mode: 'subscription',
     success_url: params.successUrl,
     cancel_url: params.cancelUrl,
-    metadata: { tenantId: params.tenantId },
+    metadata,
     subscription_data: {
-      metadata: { tenantId: params.tenantId },
+      metadata,
     },
     allow_promotion_codes: true,
     billing_address_collection: 'required',
@@ -226,9 +247,10 @@ export function mapPriceToPlanTier(priceId: string): string {
   return 'STARTER';
 }
 
-export function mapPlanTierToPriceId(tier: string, interval: 'monthly' | 'annual' = 'monthly'): string {
+export function mapPlanTierToPriceId(tier: string, interval: 'monthly' | 'six_month' | 'annual' = 'monthly'): string {
   const { priceIds } = STRIPE_CONFIG;
-  const key = `${tier.toLowerCase()}${interval === 'monthly' ? 'Monthly' : 'Annual'}` as keyof typeof priceIds;
+  const suffix = interval === 'monthly' ? 'Monthly' : interval === 'six_month' ? 'SixMonth' : 'Annual';
+  const key = `${tier.toLowerCase()}${suffix}` as keyof typeof priceIds;
   return priceIds[key] || '';
 }
 

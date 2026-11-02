@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { api } from '../api/client';
 import { openCashfreeCheckout, openRazorpayCheckout } from '../lib/checkout';
+import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
 
 interface SubscriptionPlan {
   tier: string;
@@ -11,6 +12,7 @@ interface SubscriptionPlan {
   monthlyPrice: number;
   annualPrice: number;
   cashfreeMonthlyTotalInr?: number;
+  cashfreeSixMonthTotalInr?: number;
   cashfreeAnnualTotalInr?: number;
 }
 
@@ -21,7 +23,7 @@ export default function SubscribePage() {
   const [paymentProvider, setPaymentProvider] = useState('stripe');
   const [selectedTier, setSelectedTier] = useState(() => sessionStorage.getItem('signupSelectedPlan') || 'STARTER');
   const [phone, setPhone] = useState(() => sessionStorage.getItem('signupPhone') || '');
-  const [interval, setInterval] = useState<'monthly' | 'annual'>('monthly');
+  const interval = getPlanInterval(selectedTier);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -130,9 +132,13 @@ export default function SubscribePage() {
   };
 
   const selectedPlan = plans.find((plan) => plan.tier === selectedTier);
-  const price = selectedPlan ? (interval === 'monthly' ? selectedPlan.monthlyPrice : selectedPlan.annualPrice) : 0;
+  const price = selectedPlan
+    ? interval === 'monthly' ? selectedPlan.monthlyPrice : interval === 'six_month' ? selectedPlan.monthlyPrice * 6 : selectedPlan.annualPrice
+    : 0;
   const prepaidPrice = selectedPlan
-    ? interval === 'monthly' ? selectedPlan.cashfreeMonthlyTotalInr : selectedPlan.cashfreeAnnualTotalInr
+    ? interval === 'monthly' ? selectedPlan.cashfreeMonthlyTotalInr : interval === 'six_month'
+      ? selectedPlan.cashfreeSixMonthTotalInr ?? (typeof selectedPlan.cashfreeMonthlyTotalInr === 'number' ? selectedPlan.cashfreeMonthlyTotalInr * 6 : undefined)
+      : selectedPlan.cashfreeAnnualTotalInr
     : undefined;
   const priceLabel = paymentProvider === 'cashfree' || paymentProvider === 'razorpay'
     ? typeof prepaidPrice === 'number'
@@ -168,19 +174,6 @@ export default function SubscribePage() {
               </div>
             ) : (
               <>
-                <div className="mt-6 flex justify-center gap-2">
-                  {(['monthly', 'annual'] as const).map((term) => (
-                    <button
-                      key={term}
-                      type="button"
-                      onClick={() => setInterval(term)}
-                      className={`rounded-full px-4 py-2 text-sm font-medium ${interval === term ? 'bg-wa-green text-white' : 'bg-white text-ios-secondary border border-black/10'}`}
-                    >
-                      {term === 'monthly' ? 'Monthly' : 'Annual'}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   {plans.map((plan) => (
                     <button
@@ -189,8 +182,11 @@ export default function SubscribePage() {
                       onClick={() => setSelectedTier(plan.tier)}
                       className={`rounded-2xl border p-4 text-left transition ${selectedTier === plan.tier ? 'border-wa-green bg-wa-green/5 ring-2 ring-wa-green/20' : 'border-black/10 bg-white'}`}
                     >
-                      <span className="block font-semibold text-ios-dark">{plan.name}</span>
+                      <span className="block font-semibold text-ios-dark">{getIntervalLabel(getPlanInterval(plan.tier))}</span>
                       <span className="mt-1 block text-sm text-ios-secondary">{plan.description || plan.tier}</span>
+                      <span className="mt-2 inline-block rounded-full bg-wa-green/10 px-2.5 py-1 text-xs font-semibold text-wa-green">
+                        {getIntervalLabel(getPlanInterval(plan.tier))} billing
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -221,7 +217,7 @@ export default function SubscribePage() {
                   disabled={!selectedPlan || checkoutLoading || checkingPayment}
                   className="mt-6 w-full rounded-xl bg-wa-green px-6 py-3 font-semibold text-white disabled:opacity-50"
                 >
-                  {checkoutLoading ? 'Opening secure checkout…' : `Buy subscription · ${priceLabel}${interval === 'monthly' ? '/month' : '/year'}`}
+                  {checkoutLoading ? 'Opening secure checkout…' : `Buy subscription · ${priceLabel} / ${interval === 'monthly' ? 'month' : interval === 'six_month' ? '6 months' : '12 months'}`}
                 </button>
                 <p className="mt-3 text-center text-xs text-ios-muted">Secure payment is processed by your configured payment provider.</p>
               </>

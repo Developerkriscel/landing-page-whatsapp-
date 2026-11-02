@@ -25,7 +25,7 @@ import { hasUnlimitedContactsAndMessages } from '@whatsapp-saas/config/plans';
 
 const createCheckoutSchema = z.object({
   planTier: z.enum(['STARTER', 'GROWTH', 'BUSINESS']),
-  interval: z.enum(['monthly', 'annual']).default('monthly'),
+  interval: z.enum(['monthly', 'six_month', 'annual']).default('monthly'),
 });
 
 const upgradeSchema = z.object({
@@ -130,6 +130,7 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
       success: true,
       data: plans.map((plan) => {
         const monthly = quoteCashfreePlanPrice(Number(plan.monthlyPrice), usdToInr);
+        const sixMonth = quoteCashfreePlanPrice(Number(plan.monthlyPrice) * 6, usdToInr);
         const annual = quoteCashfreePlanPrice(Number(plan.annualPrice), usdToInr);
         const unlimitedContactsAndMessages = hasUnlimitedContactsAndMessages(plan.tier);
         return {
@@ -141,6 +142,9 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
           cashfreeMonthlyBaseInr: monthly.baseMinor / 100,
           cashfreeMonthlyGstInr: monthly.gstMinor / 100,
           cashfreeMonthlyTotalInr: monthly.totalMinor / 100,
+          cashfreeSixMonthBaseInr: sixMonth.baseMinor / 100,
+          cashfreeSixMonthGstInr: sixMonth.gstMinor / 100,
+          cashfreeSixMonthTotalInr: sixMonth.totalMinor / 100,
           cashfreeAnnualBaseInr: annual.baseMinor / 100,
           cashfreeAnnualGstInr: annual.gstMinor / 100,
           cashfreeAnnualTotalInr: annual.totalMinor / 100,
@@ -204,6 +208,18 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
     }
 
     const body = createCheckoutSchema.parse(request.body);
+    const requiredInterval = body.planTier === 'STARTER'
+      ? 'monthly'
+      : body.planTier === 'GROWTH' ? 'six_month' : 'annual';
+    if (body.interval !== requiredInterval) {
+      return reply.status(400).send({
+        success: false,
+        error: {
+          code: 'PLAN_INTERVAL_MISMATCH',
+          message: `${body.planTier} subscriptions must use the ${requiredInterval} billing term.`,
+        },
+      });
+    }
 
     const tenant = await app.prisma.tenant.findUnique({
       where: { id: request.authUser.tenantId },
@@ -235,7 +251,9 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
         return reply.status(404).send({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Selected plan is not available.' } });
       }
 
-      const amountUsd = Number(body.interval === 'monthly' ? plan.monthlyPrice : plan.annualPrice);
+      const amountUsd = body.interval === 'monthly'
+        ? Number(plan.monthlyPrice)
+        : body.interval === 'six_month' ? Number(plan.monthlyPrice) * 6 : Number(plan.annualPrice);
       if (amountUsd <= 0) {
         return reply.status(400).send({ success: false, error: { code: 'PLAN_NOT_PURCHASABLE', message: 'This plan is not available for online checkout.' } });
       }
@@ -284,7 +302,9 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
         return reply.status(404).send({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Selected plan is not available.' } });
       }
 
-      const amountUsd = Number(body.interval === 'monthly' ? plan.monthlyPrice : plan.annualPrice);
+      const amountUsd = body.interval === 'monthly'
+        ? Number(plan.monthlyPrice)
+        : body.interval === 'six_month' ? Number(plan.monthlyPrice) * 6 : Number(plan.annualPrice);
       if (amountUsd <= 0) {
         return reply.status(400).send({ success: false, error: { code: 'PLAN_NOT_PURCHASABLE', message: 'This plan is not available for online checkout.' } });
       }
@@ -344,13 +364,23 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
       });
     }
 
-    // Get price ID
-    const priceId = mapPlanTierToPriceId(body.planTier, body.interval);
-    if (!priceId) {
+    // Stripe uses a generated recurring price for a six-month term; the other
+    // terms use their configured Stripe Price IDs.
+    const sixMonthPlan = body.interval === 'six_month'
+      ? await app.prisma.plan.findFirst({ where: { tier: body.planTier, isPublic: true, isActive: true } })
+      : null;
+    if (body.interval === 'six_month' && !sixMonthPlan) {
+      return reply.status(404).send({ success: false, error: { code: 'PLAN_NOT_FOUND', message: 'Selected plan is not available.' } });
+    }
+    const priceId = body.interval === 'six_month' ? '' : mapPlanTierToPriceId(body.planTier, body.interval);
+    if (body.interval !== 'six_month' && !priceId) {
       return reply.status(400).send({
         success: false,
         error: { code: 'PRICE_NOT_FOUND', message: 'Price ID not configured for this plan' },
       });
+    }
+    if (sixMonthPlan && Number(sixMonthPlan.monthlyPrice) <= 0) {
+      return reply.status(400).send({ success: false, error: { code: 'PLAN_NOT_PURCHASABLE', message: 'This plan is not available for online checkout.' } });
     }
 
     // Create checkout session
@@ -358,7 +388,13 @@ export async function registerBillingRoutes(app: FastifyInstance): Promise<void>
     const session = await createCheckoutSession({
       customerId,
       priceId,
+      sixMonthPrice: sixMonthPlan ? {
+        amountUsd: Number(sixMonthPlan.monthlyPrice) * 6,
+        planName: sixMonthPlan.name,
+      } : undefined,
       tenantId: tenant.id,
+      planTier: body.planTier,
+      interval: body.interval,
       successUrl: request.authUser.billingOnly
         ? `${baseUrl}/subscribe?session_id={CHECKOUT_SESSION_ID}`
         : `${baseUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`,

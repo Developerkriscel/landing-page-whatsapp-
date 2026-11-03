@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { api } from '../api/client';
 import { openCashfreeCheckout, openRazorpayCheckout } from '../lib/checkout';
-import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
+import { getPlanInterval, getIntervalLabel, type SubscriptionInterval } from '../lib/subscriptionTerms';
 
 interface SubscriptionPlan {
   tier: string;
@@ -20,11 +20,19 @@ interface SubscriptionPlan {
 export default function SubscribePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isDirectCheckout = searchParams.get('checkout') === '1';
+  const autoCheckoutStarted = useRef(false);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [paymentProvider, setPaymentProvider] = useState('stripe');
-  const [selectedTier, setSelectedTier] = useState(() => sessionStorage.getItem('signupSelectedPlan') || 'STARTER');
-  const [phone, setPhone] = useState(() => sessionStorage.getItem('signupPhone') || '');
-  const interval = getPlanInterval(selectedTier);
+  const [selectedTier] = useState(() => sessionStorage.getItem('signupSelectedPlan') || 'STARTER');
+  const [selectedInterval] = useState<SubscriptionInterval>(() => {
+    const savedInterval = sessionStorage.getItem('signupSelectedInterval');
+    return savedInterval === 'monthly' || savedInterval === 'six_month' || savedInterval === 'annual'
+      ? savedInterval
+      : getPlanInterval(sessionStorage.getItem('signupSelectedPlan') || 'STARTER');
+  });
+  const phone = sessionStorage.getItem('signupPhone') || '';
+  const interval = selectedInterval;
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -43,8 +51,8 @@ export default function SubscribePage() {
         const availablePlans = (plansResponse.data?.data || []).filter((plan: SubscriptionPlan) => ['STARTER', 'GROWTH', 'BUSINESS'].includes(plan.tier));
         setPaymentProvider(billingResponse.data?.data?.paymentProvider || 'stripe');
         setPlans(availablePlans);
-        if (availablePlans.length && !availablePlans.some((plan: SubscriptionPlan) => plan.tier === selectedTier)) {
-          setSelectedTier(availablePlans[0].tier);
+        if (!availablePlans.some((plan: SubscriptionPlan) => plan.tier === selectedTier)) {
+          setMessage('The plan you selected is currently unavailable. Please return to pricing and choose an available plan.');
         }
       })
       .catch((error) => setMessage(error.response?.data?.error?.message || 'Could not load subscription plans.'))
@@ -73,6 +81,7 @@ export default function SubscribePage() {
       if (paid) {
         sessionStorage.removeItem('signupBillingToken');
         sessionStorage.removeItem('signupSelectedPlan');
+        sessionStorage.removeItem('signupSelectedInterval');
         sessionStorage.removeItem('signupPhone');
         setPaymentComplete(true);
         setMessage('Payment confirmed. You can now sign in to your workspace.');
@@ -91,13 +100,13 @@ export default function SubscribePage() {
   const startCheckout = async () => {
     setMessage('');
     const phoneDigits = phone.replace(/\D/g, '').length;
-    if (phoneDigits < 10 || phoneDigits > 15) {
-      setMessage('Enter a valid phone number with 10 to 15 digits to continue.');
+    if (phone && (phoneDigits < 10 || phoneDigits > 15)) {
+      setMessage('Enter a valid phone number with 10 to 15 digits, or clear it to continue without one.');
       return;
     }
     setCheckoutLoading(true);
     try {
-      await api.put('/billing/setup/phone', { phone });
+      if (phone) await api.put('/billing/setup/phone', { phone });
       const response = await api.post('/billing/checkout', { planTier: selectedTier, interval });
       const checkout = response.data?.data;
       if (checkout?.provider === 'razorpay' && checkout?.keyId && checkout?.orderId) {
@@ -112,11 +121,14 @@ export default function SubscribePage() {
         if (result.status === 'credited') {
           sessionStorage.removeItem('signupBillingToken');
           sessionStorage.removeItem('signupSelectedPlan');
+          sessionStorage.removeItem('signupSelectedInterval');
           sessionStorage.removeItem('signupPhone');
           setPaymentComplete(true);
           setMessage('Payment confirmed. You can now sign in to your workspace.');
-        } else if (result.status !== 'dismissed') {
-          setMessage(result.message || 'Payment is processing. Try signing in after confirmation.');
+        } else {
+          setMessage(result.status === 'dismissed'
+            ? 'Checkout was closed. Continue below to try again.'
+            : result.message || 'Payment is processing. Try signing in after confirmation.');
         }
       } else if (checkout?.provider === 'cashfree' && checkout?.paymentSessionId) {
         await openCashfreeCheckout(checkout.paymentSessionId, !!checkout.testMode);
@@ -147,6 +159,16 @@ export default function SubscribePage() {
       : 'Price shown at checkout'
     : new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(price);
 
+  useEffect(() => {
+    if (
+      !isDirectCheckout || autoCheckoutStarted.current || loadingPlans || checkingPayment
+      || !sessionStorage.getItem('signupBillingToken') || !selectedPlan
+    ) return;
+
+    autoCheckoutStarted.current = true;
+    void startCheckout();
+  }, [isDirectCheckout, loadingPlans, checkingPayment, selectedPlan]);
+
   return (
     <main className="min-h-screen bg-ios-background flex items-center justify-center p-4">
       <section className="card-apple w-full max-w-2xl p-6 sm:p-8">
@@ -162,47 +184,37 @@ export default function SubscribePage() {
         ) : (
           <>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-ios-dark">Choose your subscription</h1>
-              <p className="mt-2 text-ios-secondary">Purchase a plan to activate your workspace and enable sign in.</p>
+              <h1 className="text-2xl font-bold text-ios-dark">{isDirectCheckout ? 'Opening secure checkout' : 'Complete your subscription'}</h1>
+              {!isDirectCheckout && <p className="mt-2 text-ios-secondary">Your pricing page selection is ready. Complete payment to activate your workspace.</p>}
             </div>
 
-            {loadingPlans || checkingPayment ? (
+            {loadingPlans || checkingPayment || (isDirectCheckout && checkoutLoading) ? (
               <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-wa-green" /></div>
             ) : !sessionStorage.getItem('signupBillingToken') ? (
               <div className="mt-6 text-center">
                 {message && <p className="text-sm text-ios-secondary">{message}</p>}
                 <Link to="/login" className="mt-4 inline-block rounded-xl bg-wa-green px-6 py-3 font-semibold text-white">Go to Login</Link>
               </div>
+            ) : isDirectCheckout ? (
+              <div className="mt-5 text-center">
+                {message && <p role="status" className="rounded-xl bg-apple-orange/10 p-3 text-sm text-ios-dark">{message}</p>}
+                <button
+                  type="button"
+                  onClick={() => { autoCheckoutStarted.current = false; void startCheckout(); }}
+                  disabled={!selectedPlan || checkoutLoading}
+                  className="mt-5 w-full rounded-xl bg-wa-green px-6 py-3 font-semibold text-white disabled:opacity-50"
+                >
+                  {checkoutLoading ? 'Opening secure checkout…' : 'Continue to payment'}
+                </button>
+              </div>
             ) : (
               <>
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  {plans.map((plan) => (
-                    <button
-                      key={plan.tier}
-                      type="button"
-                      onClick={() => setSelectedTier(plan.tier)}
-                      className={`rounded-2xl border p-4 text-left transition ${selectedTier === plan.tier ? 'border-wa-green bg-wa-green/5 ring-2 ring-wa-green/20' : 'border-black/10 bg-white'}`}
-                    >
-                      <span className="block font-semibold text-ios-dark">{getIntervalLabel(getPlanInterval(plan.tier))}</span>
-                      <span className="mt-1 block text-sm text-ios-secondary">{plan.description || plan.tier}</span>
-                      <span className="mt-2 inline-block rounded-full bg-wa-green/10 px-2.5 py-1 text-xs font-semibold text-wa-green">
-                        {getIntervalLabel(getPlanInterval(plan.tier))} billing
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-5">
-                  <label htmlFor="subscription-phone" className="mb-1.5 block text-sm font-medium text-ios-secondary">Phone number for payment</label>
-                  <input
-                    id="subscription-phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    autoComplete="tel"
-                    placeholder="+91 98765 43210"
-                    className="input-apple w-full"
-                  />
+                <div className="mt-5 rounded-2xl border border-wa-green/20 bg-wa-green/5 p-5 text-center">
+                  <p className="text-lg font-semibold text-ios-dark">{getIntervalLabel(interval)} plan</p>
+                  <p className="mt-1 text-sm text-ios-secondary">{selectedPlan?.description || selectedTier}</p>
+                  <span className="mt-3 inline-block rounded-full bg-wa-green/10 px-3 py-1 text-xs font-semibold text-wa-green">
+                    {getIntervalLabel(interval)} billing · {priceLabel}
+                  </span>
                 </div>
 
                 {message && (

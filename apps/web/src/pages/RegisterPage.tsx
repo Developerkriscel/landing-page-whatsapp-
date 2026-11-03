@@ -6,15 +6,26 @@
 import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
-import { Eye, EyeOff, Lock, Mail, Building, CheckCircle } from 'lucide-react';
-import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
+import { Eye, EyeOff, Lock, Mail, Building } from 'lucide-react';
+import { getPlanInterval, getIntervalLabel, type SubscriptionInterval } from '../lib/subscriptionTerms';
 
-const STEPS = ['Account', 'Workspace', 'Subscription'];
+const STEPS = ['Account'];
+const PLAN_TIERS = ['STARTER', 'GROWTH', 'BUSINESS'] as const;
+
+function getSignupPlan(searchParams: URLSearchParams) {
+  const requestedPlan = searchParams.get('plan')?.toUpperCase() || 'STARTER';
+  const plan = PLAN_TIERS.find((tier) => tier === requestedPlan) || 'STARTER';
+  const requestedInterval = searchParams.get('interval');
+  const interval = requestedInterval === getPlanInterval(plan)
+    ? requestedInterval as SubscriptionInterval
+    : getPlanInterval(plan);
+  return { plan, interval };
+}
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [step, setStep] = useState(0);
+  const signupPlan = getSignupPlan(searchParams);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +35,7 @@ export default function RegisterPage() {
     password: '',
     company: '',
     phone: '',
-    plan: searchParams.get('plan')?.toUpperCase() || 'STARTER',
+    plan: signupPlan.plan,
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -32,46 +43,35 @@ export default function RegisterPage() {
     setForm({ ...form, [key]: value });
   };
 
-  const nextStep = () => setStep(s => s + 1);
-  const prevStep = () => setStep(s => s - 1);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (step === 0) {
-      if (!form.name || !form.email || !form.password) {
-        setError('Please fill in all required fields');
-        return;
-      }
-      nextStep();
+    if (!form.name || !form.email || !form.password || !form.company) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    const phoneDigits = form.phone.replace(/\D/g, '').length;
+    if (form.phone && (phoneDigits < 10 || phoneDigits > 15)) {
+      setError('Enter a valid phone number with 10 to 15 digits, or leave it blank.');
       return;
     }
 
-    if (step === 1) {
-      if (!form.company) {
-        setError('Please enter your company name');
-        return;
-      }
-      setLoading(true);
-      try {
-        const response = await api.post('/auth/register', form);
-        const billingToken = response.data?.data?.billingToken;
-        if (!billingToken) throw new Error('Could not start the subscription checkout. Please try again.');
-        sessionStorage.setItem('signupBillingToken', billingToken);
-        sessionStorage.setItem('signupSelectedPlan', form.plan);
-        sessionStorage.setItem('signupPhone', form.phone);
-        nextStep();
-      } catch (err: any) {
-        setError(err.response?.data?.error?.message || err.message || 'Registration failed');
-      } finally {
-        setLoading(false);
-      }
-      return;
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/register', form);
+      const billingToken = response.data?.data?.billingToken;
+      if (!billingToken) throw new Error('Could not start the subscription checkout. Please try again.');
+      sessionStorage.setItem('signupBillingToken', billingToken);
+      sessionStorage.setItem('signupSelectedPlan', form.plan);
+      sessionStorage.setItem('signupSelectedInterval', signupPlan.interval);
+      sessionStorage.setItem('signupPhone', form.phone);
+      navigate('/subscribe?checkout=1');
+    } catch (err: any) {
+      setError(err.response?.data?.error?.message || err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
-
-    // A short-lived billing token allows plan checkout without signing in.
-    navigate('/subscribe');
   };
 
   const passwordStrength = (pwd: string) => {
@@ -103,28 +103,24 @@ export default function RegisterPage() {
         </div>
 
         {/* Steps */}
-        <div className="flex items-center justify-center gap-2 mb-8">
+        {/* <div className="flex items-center justify-center gap-2 mb-8">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition ${
-                i < step ? 'bg-apple-green text-white' :
-                i === step ? 'bg-wa-green text-white' :
-                'bg-ios-gray text-ios-muted'
+                'bg-wa-green text-white'
               }`}>
-                {i < step ? <CheckCircle className="w-4 h-4" /> : i + 1}
+                {i + 1}
               </div>
-              <span className={`text-sm ${i === step ? 'text-ios-dark font-medium' : 'text-ios-muted'}`}>{s}</span>
+              <span className="text-sm text-ios-dark font-medium">{s}</span>
               {i < STEPS.length - 1 && <div className="w-8 h-px bg-black/10" />}
             </div>
           ))}
-        </div>
+        </div> */}
 
         {/* Form Card */}
         <div className="card-apple p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
-            {step === 0 && (
-              <>
-                <div>
+            <div>
                   <label className="block text-sm font-medium text-ios-secondary mb-1.5">Full Name</label>
                   <input
                     type="text"
@@ -182,11 +178,6 @@ export default function RegisterPage() {
                     </div>
                   )}
                 </div>
-              </>
-            )}
-
-            {step === 1 && (
-              <>
                 <div>
                   <label className="block text-sm font-medium text-ios-secondary mb-1.5">Company Name</label>
                   <div className="relative">
@@ -210,39 +201,10 @@ export default function RegisterPage() {
                     className="input-apple w-full"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-ios-secondary mb-1.5">Plan</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['STARTER', 'GROWTH', 'BUSINESS'].map((plan) => (
-                      <button
-                        key={plan}
-                        type="button"
-                        onClick={() => updateForm('plan', plan)}
-                        className={`py-2.5 text-sm font-medium rounded-apple-lg border transition ${
-                          form.plan === plan
-                            ? 'border-wa-green bg-wa-green/5 text-wa-green'
-                            : 'border-black/10 text-ios-secondary hover:border-black/30'
-                        }`}
-                      >
-                        {getIntervalLabel(getPlanInterval(plan))}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {step === 2 && (
-              <div className="text-center py-4">
-                <div className="w-16 h-16 bg-apple-green/20 text-apple-green rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8" />
-                </div>
-                <h3 className="text-lg font-bold text-ios-dark">Choose a subscription to continue</h3>
-                <p className="text-ios-secondary mt-2 text-sm">
-                  Your workspace <strong className="text-ios-dark">{form.company}</strong> is ready. Purchase a plan to activate it and sign in.
-                </p>
-              </div>
-            )}
+            <div className="rounded-apple-lg bg-wa-green/5 px-4 py-3 text-sm">
+              <p className="font-semibold text-wa-green">Selected plan: {getIntervalLabel(signupPlan.interval)}</p>
+              <p className="mt-1 text-ios-secondary">Your pricing page selection will be used at checkout.</p>
+            </div>
 
             {/* Error */}
             {error && (
@@ -252,36 +214,23 @@ export default function RegisterPage() {
             )}
 
             {/* Nav buttons */}
-            <div className="flex gap-3">
-              {step > 0 && step < 2 && (
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  className="flex-1 py-3 border border-black/10 text-ios-secondary font-medium rounded-apple-lg hover:bg-ios-gray transition"
-                >
-                  Back
-                </button>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 py-3 bg-wa-green text-white font-semibold rounded-apple-lg hover:bg-wa-green/90 transition disabled:opacity-50"
-              >
-                {loading ? 'Please wait...' : step === 2 ? 'Choose subscription' : 'Continue'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-wa-green text-white font-semibold rounded-apple-lg hover:bg-wa-green/90 transition disabled:opacity-50"
+            >
+              {loading ? 'Creating account...' : 'Continue to payment'}
+            </button>
           </form>
 
-          {step < 2 && (
-            <div className="mt-6 text-center">
-              <p className="text-sm text-ios-secondary">
-                Already have an account?{' '}
-                <Link to="/login" className="text-wa-green font-medium hover:underline">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          )}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-ios-secondary">
+              Already have an account?{' '}
+              <Link to="/login" className="text-wa-green font-medium hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

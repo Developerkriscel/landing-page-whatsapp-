@@ -203,17 +203,20 @@ model Plan {
   tier         PlanTier @unique
   monthlyPrice Decimal  @db.Decimal(10, 2)
   annualPrice  Decimal  @db.Decimal(10, 2)
+  monthlyPriceInr     Decimal @default(1800) @db.Decimal(10, 2)
+  sixMonthPriceInr    Decimal @default(9999) @db.Decimal(10, 2)
+  twelveMonthPriceInr Decimal @default(14999) @db.Decimal(10, 2)
   description  String?
 
   // Limits
-  maxContacts            Int @default(500)
-  maxMessagesPerMonth    Int @default(5000)
+  maxContacts            Int @default(-1)
+  maxMessagesPerMonth    Int @default(-1)
   maxPhoneNumbers        Int @default(1)
   maxTeamMembers         Int @default(3)
   maxChatbotFlows        Int @default(1)
   maxCampaigns           Int @default(10)
   maxSegments            Int @default(5)
-  maxContactsPerCampaign Int @default(500)
+  maxContactsPerCampaign Int @default(-1)
   maxTemplates           Int @default(10)
   maxAPIKeys             Int @default(1)
   maxCampaignsPerDay     Int @default(5)
@@ -236,8 +239,8 @@ model Plan {
   hasBulkExport        Boolean @default(true)
 
   // Overages
-  overageContacts   Decimal @default(0.01) @db.Decimal(10, 4)
-  overageMessages   Decimal @default(0.005) @db.Decimal(10, 6)
+  overageContacts   Decimal @default(0) @db.Decimal(10, 4)
+  overageMessages   Decimal @default(0) @db.Decimal(10, 6)
   webhookRetries    Int     @default(3)
   dataRetentionDays Int     @default(30)
 

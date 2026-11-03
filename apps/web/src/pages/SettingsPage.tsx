@@ -318,6 +318,7 @@ export default function SettingsPage() {
     }
   }, [tenantSettings]);
 
+  
   useEffect(() => {
     if (notificationSettings) {
       setNotificationForm({

@@ -289,7 +289,7 @@ section:has(.pricing-faq-dropdown) h2 { color: var(--template-ink) !important; }
   gap: 30px !important;
   align-items: center !important;
 }
-.animated-hero__copy { max-width: 520px !important; z-index: 2; }
+.animated-hero__copy { max-width: 590px !important; z-index: 2; }
 .animated-hero__eyebrow {
   color: #078a65 !important;
   background: #e8fbf1 !important;
@@ -297,15 +297,18 @@ section:has(.pricing-faq-dropdown) h2 { color: var(--template-ink) !important; }
 }
 .animated-hero h1 {
   margin: 18px 0 18px !important;
-  font-size: clamp(2.65rem, 4.5vw, 4.55rem) !important;
+  font-size: clamp(2.35rem, 3.25vw, 3.7rem) !important;
   line-height: .98 !important;
   letter-spacing: -.065em !important;
 }
-.animated-hero__line { white-space: normal !important; width: auto !important; }
+.animated-hero__line { white-space: nowrap !important; width: max-content !important; max-width: 100% !important; }
 .animated-hero__word--customers { color: #123c32 !important; }
 .animated-hero__word--team { color: #087f67 !important; }
 .animated-hero h1 strong {
   background: linear-gradient(105deg, #08795a, #16a77a, #2b8d78) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  color: transparent !important;
   -webkit-text-fill-color: transparent;
 }
 .animated-hero__copy > p { max-width: 430px !important; font-size: 16px !important; line-height: 1.65 !important; }
@@ -353,6 +356,7 @@ section:has(.pricing-faq-dropdown) h2 { color: var(--template-ink) !important; }
 @media (max-width: 900px) {
   .animated-hero__layout { grid-template-columns: 1fr !important; padding: 44px 26px 68px !important; }
   .animated-hero__copy { max-width: 680px !important; text-align: center; margin: auto; }
+  .animated-hero__line { white-space: normal !important; width: auto !important; }
   .animated-hero__copy > p { margin-inline: auto; }
   .animated-hero__actions, .animated-hero__capabilities { justify-content: center; }
   .animated-hero__visual { width: min(100%, 640px); margin: auto; }

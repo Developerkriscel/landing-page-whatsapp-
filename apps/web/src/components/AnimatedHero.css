@@ -75,3 +75,45 @@
 @media (max-width: 800px) { .animated-hero__layout { grid-template-columns: 1fr; gap: 45px; max-width: 650px; } .animated-hero__copy { text-align: center; } .animated-hero__copy > p { margin: auto; } .animated-hero__actions,.animated-hero__capabilities { justify-content: center; } .animated-hero__badge--contacts { right: 0; } .animated-hero__badge--flow { left: 0; } }
 @media (max-width: 420px) { .animated-hero__layout { padding: 0 18px 55px; } .animated-hero h1 { font-size: clamp(25px,7.6vw,29px); } .animated-hero__flow { padding: 14px 9px; gap: 4px; } .animated-hero__flow span { gap: 4px; } .animated-hero__inbox-heading { padding-inline: 15px; } .animated-hero__window { gap: 8px; padding-inline: 12px; } }
 @media (prefers-reduced-motion: reduce) { .animated-hero__actions a:hover { transform: none; } }
+
+/* Fizens-inspired hero composition, adapted to Kriscel WA's green system and existing video. */
+.animated-hero { background: #fbfdfc; }
+.animated-hero__layout { max-width: 1360px; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: clamp(36px, 6vw, 86px); padding: clamp(58px, 8vw, 106px) 46px clamp(84px, 10vw, 132px); }
+.animated-hero__copy { position: relative; z-index: 2; }
+.animated-hero h1 { max-width: 760px; font-size: clamp(44px, 5.2vw, 78px); line-height: .99; letter-spacing: -.065em; }
+.animated-hero__line { width: auto; max-width: none; white-space: nowrap; }
+.animated-hero h1 strong { margin-top: 8px; }
+.animated-hero h1::after { width: min(340px, 62%); height: 5px; margin-top: 26px; }
+.animated-hero__copy > p { max-width: 520px; font-size: 17px; line-height: 1.65; }
+.animated-hero__actions { margin-top: 32px; }
+.animated-hero__actions a { padding: 15px 22px; border-radius: 10px; }
+.animated-hero__visual { min-height: 520px; padding: 18px 0 34px; display: flex; align-items: center; justify-content: flex-end; }
+.animated-hero__visual::before { position: absolute; z-index: -2; right: -9%; bottom: 1%; width: 92%; height: 76%; border-radius: 34px; background: linear-gradient(135deg, #eafaf3 0%, #c8f1de 44%, #d4ddff 100%); box-shadow: 0 26px 70px -42px #3d629b99; content: ''; transform: rotate(-3deg); }
+.animated-hero__visual::after { position: absolute; z-index: -1; right: 7%; bottom: -4%; width: 55%; height: 16%; border-radius: 50%; background: #4271c22b; filter: blur(22px); content: ''; transform: rotate(-4deg); }
+.animated-hero__workspace { width: min(100%, 690px); transform: rotate(3deg) translateY(-4px); transform-origin: 72% 62%; box-shadow: 0 34px 64px -28px #22596d8c, 0 0 0 8px #ffffff70; transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s ease; }
+.animated-hero__workspace:hover { transform: rotate(0deg) translateY(-10px) scale(1.015); box-shadow: 0 42px 76px -30px #22596db3, 0 0 0 8px #ffffff9c; }
+.animated-hero__video { width: 100%; max-height: 460px; object-fit: cover; border-radius: 0 0 21px 21px; }
+.animated-hero__badge--contacts { top: 3%; right: -2%; }
+.animated-hero__badge--flow { bottom: 0; left: 1%; }
+@media (max-width: 1050px) {
+  .animated-hero__layout { gap: 36px; padding-inline: 30px; }
+  .animated-hero h1 { font-size: clamp(40px, 5.3vw, 62px); }
+  .animated-hero__visual { min-height: 430px; }
+}
+@media (max-width: 800px) {
+  .animated-hero__layout { grid-template-columns: 1fr; gap: 36px; padding-top: 54px; }
+  .animated-hero__copy { text-align: left; }
+  .animated-hero h1 { font-size: clamp(42px, 9vw, 64px); }
+  .animated-hero__visual { min-height: 360px; }
+  .animated-hero__visual::before { right: -12%; width: 108%; }
+  .animated-hero__workspace { width: 96%; margin-inline: auto; transform: rotate(2deg); }
+}
+@media (max-width: 520px) {
+  .animated-hero__layout { padding: 38px 18px 70px; }
+  .animated-hero h1 { font-size: clamp(36px, 11vw, 52px); }
+  .animated-hero__line { white-space: normal; }
+  .animated-hero__visual { min-height: 285px; padding-bottom: 22px; }
+  .animated-hero__badge { padding: 10px 12px; }
+  .animated-hero__badge strong { font-size: 10px; }
+  .animated-hero__badge small { font-size: 9px; }
+}

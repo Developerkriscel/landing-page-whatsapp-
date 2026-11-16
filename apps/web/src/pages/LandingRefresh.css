@@ -11,6 +11,7 @@
   background: radial-gradient(260px circle at var(--light-x, 50%) var(--light-y, 50%), color-mix(in srgb, var(--card-color, var(--plan-color, #12b897)) 15%, transparent), transparent 75%);
   transition: opacity .35s ease;
 }
+
 .pricing-page .feature-services__card:hover > .landing-spotlight,
 .pricing-page .pricing-plan-card:hover > .landing-spotlight,
 .pricing-page .feature-services__card:focus-visible > .landing-spotlight,
@@ -241,6 +242,53 @@
   .pricing-page .feature-services--orbit .feature-services__card-title {
     top: 91px !important;
     line-height: 1.22 !important;
+  }
+}
+
+/* Keep subscription cards aligned on one baseline. */
+.pricing-page #pricing-plans > .grid {
+  align-items: start !important;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card {
+  height: 760px !important;
+  min-height: 760px !important;
+  margin-top: 0 !important;
+  transform: none !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card--popular {
+  transform: none !important;
+  box-shadow: 0 24px 52px -26px #087f6099, 0 0 0 5px #16a87322 !important;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card > h3 {
+  margin-top: 0 !important;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card > p:first-of-type {
+  min-height: 20px;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card > div.mt-6 {
+  min-height: 86px;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card > button {
+  flex: 0 0 auto;
+}
+
+.pricing-page #pricing-plans .grid > .pricing-plan-card > ul {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 900px) {
+  .pricing-page #pricing-plans .grid > .pricing-plan-card,
+  .pricing-page #pricing-plans .grid > .pricing-plan-card--popular {
+    height: auto !important;
+    min-height: 0 !important;
   }
 }
 

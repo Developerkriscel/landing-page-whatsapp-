@@ -338,6 +338,48 @@
   }
 }
 
+/* Premium plan-card interaction effects. */
+@media (prefers-reduced-motion: no-preference) {
+  .pricing-page #pricing-plans .grid > .pricing-plan-card {
+    transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s ease, border-color .35s ease !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    display: block !important;
+    border-radius: inherit !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    background: linear-gradient(118deg, transparent 22%, #ffffff70 42%, transparent 60%) !important;
+    transform: translateX(-120%) !important;
+    transition: opacity .25s ease !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card:hover {
+    transform: translateY(-6px) scale(1.012) !important;
+    border-color: color-mix(in srgb, var(--plan-color) 58%, #fff) !important;
+    box-shadow: 0 28px 48px -28px color-mix(in srgb, var(--plan-deep) 65%, transparent), 0 0 0 5px color-mix(in srgb, var(--plan-color) 14%, transparent) !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card:hover::after {
+    opacity: 1 !important;
+    animation: pricing-card-sheen 1.05s ease-out both !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card--popular:hover {
+    transform: translateY(-8px) scale(1.018) !important;
+    box-shadow: 0 32px 56px -28px #087f60aa, 0 0 0 6px #16a87332 !important;
+  }
+}
+
+@keyframes pricing-card-sheen {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(120%); }
+}
+
 /* Scale the complete desktop use-cases composition down to fit one screen. */
 @media (min-width: 901px) {
   .pricing-page .feature-services--orbit { padding-top: 38px !important; padding-bottom: 28px !important; }

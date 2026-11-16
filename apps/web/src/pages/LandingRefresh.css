@@ -284,6 +284,11 @@
   flex: 1 1 auto;
 }
 
+/* Give the price block and CTA a little more breathing room. */
+.pricing-page #pricing-plans .grid > .pricing-plan-card > button {
+  margin-top: 2rem !important;
+}
+
 @media (max-width: 900px) {
   .pricing-page #pricing-plans .grid > .pricing-plan-card,
   .pricing-page #pricing-plans .grid > .pricing-plan-card--popular {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ArrowUpRight, MessageSquare, Users, Workflow, ShoppingBag, Headphones, CalendarDays } from 'lucide-react';
+import { ArrowUpRight, Check, MessageSquare, Users, Workflow, ShoppingBag, Headphones, CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './LandingWorkflow.css';
 import connectedCustomerImage from '../assets/connected-customer-experience.png';
@@ -44,11 +44,23 @@ export default function LandingWorkflow() {
       </div>
 
       <div className="landing-workflow__showcase landing-workflow__showcase--image" data-reveal>
-        <img
-          className="landing-workflow__showcase-image"
-          src={connectedCustomerImage}
-          alt="WhatsApp chatbot connecting a customer conversation with a support team"
-        />
+        <div className="landing-workflow__story-image">
+          <img
+            className="landing-workflow__showcase-image"
+            src={connectedCustomerImage}
+            alt="WhatsApp chatbot connecting a customer conversation with a support team"
+          />
+        </div>
+        <div className="landing-workflow__conversation" aria-label="Illustrative customer support conversation">
+          <div className="landing-workflow__chat-header"><span className="landing-workflow__avatar"><MessageSquare size={22} aria-hidden="true" /></span><div><strong>Customer support</strong><small>Example conversation</small></div><span className="landing-workflow__status">Shared inbox</span></div>
+          <div className="landing-workflow__messages">
+            <div className="landing-workflow__bubble">Hi! Can someone help me choose a plan?<small>Customer</small></div>
+            <div className="landing-workflow__bubble landing-workflow__bubble--reply">Of course! I can connect you with our team.<small>Chatbot reply <Check size={12} aria-hidden="true" /></small></div>
+            <div className="landing-workflow__handoff"><Users size={15} aria-hidden="true" /> Conversation assigned to a teammate</div>
+            <div className="landing-workflow__bubble landing-workflow__bubble--reply">Happy to help. How many people will be replying to customers?<small>Team member <Check size={12} aria-hidden="true" /></small></div>
+          </div>
+          <div className="landing-workflow__chat-footer"><span>Customer context</span><span>Team collaboration</span><span>One workspace</span></div>
+        </div>
       </div>
 
       <div className="landing-workflow__heading landing-workflow__heading--compact" data-reveal>

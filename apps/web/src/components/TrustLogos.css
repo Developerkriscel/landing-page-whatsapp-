@@ -55,15 +55,23 @@
   overflow: hidden;
   border: 1px solid #28384c;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 12px 28px -20px #26384d99, inset 0 1px #fff;
+  background: linear-gradient(145deg, #fff 0%, #f8fbfc 100%);
+  box-shadow: 0 12px 28px -20px #26384d99, inset 0 1px #fff, 0 0 0 4px #ffffffb8;
+  backface-visibility: hidden;
+  transform: translateZ(0);
   transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 .trust-logos__circle img {
-  width: 76%;
-  height: 76%;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 82%;
+  max-height: 82%;
   object-fit: contain;
+  image-rendering: auto;
+  filter: contrast(1.08) saturate(1.06);
+  transform: translateZ(0);
 }
 
 .trust-logos__item:hover .trust-logos__circle {

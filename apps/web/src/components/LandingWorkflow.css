@@ -96,7 +96,19 @@
 .landing-workflow__uses article h3,
 .landing-workflow__uses article p,
 .landing-workflow__uses article a { position: relative; z-index: 1; }
-.landing-workflow__uses article h3 { margin-top: 12px; }
+.landing-workflow__uses article h3 {
+  position: absolute;
+  z-index: 2;
+  top: 31px;
+  left: 30px;
+  max-width: 72%;
+  margin: 0;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-shadow: 0 1px 5px #4c1f1c55;
+}
 .landing-workflow__uses article p { max-width: 34rem; }
 .landing-workflow__uses article:hover {
   transform: translateY(-7px);

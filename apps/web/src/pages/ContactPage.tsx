@@ -1,16 +1,31 @@
-import { Link } from 'react-router-dom';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react';
 import kriscelKSrc from '../assets/kriscel-k.jpeg';
 export default function ContactPage() {
+  const navigate = useNavigate();
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/pricing', { replace: true });
+  };
+
   return (
     <main className="min-h-screen bg-[var(--apple-bg)] px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-4xl">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-  
-          <Link to="/pricing" className="flex items-center gap-3 font-bold text-[15px]" style={{ color: 'rgb(20, 83, 45)' }}>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Go back"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-primary-apple shadow-sm transition hover:-translate-x-0.5 hover:border-wa-green hover:text-wa-green focus:outline-none focus:ring-2 focus:ring-wa-green/40"
+            >
+              <ArrowLeft size={18} aria-hidden="true" />
+            </button>
+            <Link to="/pricing" className="flex items-center gap-3 font-bold text-[15px]" style={{ color: 'rgb(20, 83, 45)' }}>
             <img src={kriscelKSrc} alt="Kriscel" className="rounded-full object-contain shrink-0 w-9 h-9" />
             Kriscel WA
-          </Link>
+            </Link>
+          </div>
           <nav aria-label="Public pages" className="flex flex-wrap gap-4 text-sm">
             
             <Link to="/pricing" className="text-secondary-apple hover:text-wa-green">Pricing</Link>

@@ -9,7 +9,7 @@
 import { useState, useEffect, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, ShieldCheck, Users, Headphones } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, ShieldCheck, Users, Headphones } from 'lucide-react';
 import KriscelWaBrandmark from '../components/KriscelWaBrandmark';
 import loginIllustrationSrc from '../assets/login-illustration.png';
 
@@ -30,6 +30,10 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const handleBack = () => {
+    navigate('/pricing', { replace: true });
+  };
 
   const emailId = useId();
   const passwordId = useId();
@@ -93,7 +97,18 @@ export default function LoginPage() {
       <div className="relative w-full max-w-[1000px] max-h-full bg-white rounded-[22px] sm:rounded-[28px] border border-black/[0.06] shadow-[0_2px_24px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 sm:px-7 sm:py-4 border-b border-black/[0.06] shrink-0">
-          <KriscelWaBrandmark compact />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white px-3 py-1.5 text-[12px] font-semibold text-black/60 transition hover:-translate-x-0.5 hover:border-[#CFE9C3] hover:text-[#14532D]"
+              aria-label="Go back to the previous page"
+            >
+              <ArrowLeft size={14} aria-hidden="true" />
+              Back
+            </button>
+            <KriscelWaBrandmark compact />
+          </div>
           <Link
             to="/register"
             className="hidden sm:flex items-center gap-1.5 text-[12px] px-3.5 py-1.5 rounded-full border border-black/10 hover:bg-black/[0.02] transition-colors shrink-0"

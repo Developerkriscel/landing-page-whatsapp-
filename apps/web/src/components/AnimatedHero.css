@@ -146,6 +146,12 @@
 .animated-hero__visual-panel span { display: block; color: #2a6657; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .animated-hero__visual-panel strong { position: absolute; right: 4%; bottom: 8%; color: #ffffff68; font-size: clamp(34px, 5vw, 72px); line-height: .86; letter-spacing: -.06em; text-align: right; }
 .animated-hero__phone-wrap { position: relative; z-index: 1; display: flex; justify-content: center; width: 100%; }
+.animated-hero__visual-rail { position: absolute; z-index: 2; top: 31%; right: -5%; width: min(210px, 34%); color: #163d35; }
+.animated-hero__visual-rail-mark { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 28px; border: 1px solid #4b8dff; border-radius: 50%; color: #2969d8; font-size: 30px; font-weight: 300; line-height: 1; }
+.animated-hero__visual-rail p { margin: 0; font-size: 16px; line-height: 1.55; }
+.animated-hero__visual-stat { display: flex; align-items: center; gap: 12px; margin-top: 44px; }
+.animated-hero__visual-stat strong { font-size: 42px; line-height: 1; letter-spacing: -.06em; }
+.animated-hero__visual-stat small { max-width: 100px; color: #6a8179; font-size: 10px; line-height: 1.35; }
 .animated-hero__workspace { width: min(100%, 470px); border-radius: 34px; border: 8px solid #fff; background: #0b2523; box-shadow: 0 42px 70px -32px #143e4fa8, 0 0 0 1px #b8d9d4, inset 0 0 0 1px #ffffff55; transform: rotate(8deg) translate(2%, 10px); transform-origin: 50% 60%; }
 .animated-hero__workspace:hover { transform: rotate(2deg) translate(4%, -6px) scale(1.015); }
 .animated-hero__window { padding: 13px 15px; background: #fff; border-radius: 25px 25px 0 0; }
@@ -170,10 +176,16 @@
   .animated-hero__workspace { width: min(78vw, 390px); transform: rotate(5deg); }
   .animated-hero__video { height: 420px; }
   .animated-hero__visual-panel { right: -6%; width: 104%; }
+  .animated-hero__visual-rail { right: 0; width: 190px; }
 }
 @media (max-width: 520px) {
   .animated-hero__visual { min-height: 390px; padding-inline: 0; }
   .animated-hero__workspace { width: min(82vw, 330px); border-width: 6px; }
   .animated-hero__video { height: 350px; }
   .animated-hero__visual-panel strong { font-size: 34px; }
+  .animated-hero__visual-rail { top: auto; right: 4%; bottom: 4%; width: 150px; padding: 12px; border-radius: 16px; background: #ffffffd9; box-shadow: 0 12px 30px -22px #153d35; backdrop-filter: blur(10px); }
+  .animated-hero__visual-rail-mark { width: 28px; height: 28px; margin-bottom: 10px; font-size: 20px; }
+  .animated-hero__visual-rail p { font-size: 11px; }
+  .animated-hero__visual-stat { margin-top: 14px; }
+  .animated-hero__visual-stat strong { font-size: 24px; }
 }

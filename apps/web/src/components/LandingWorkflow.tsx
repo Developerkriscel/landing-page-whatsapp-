@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { ArrowUpRight, Check, MessageSquare, Users, Workflow, ShoppingBag, Headphones, CalendarDays } from 'lucide-react';
+import { ArrowUpRight, MessageSquare, Users, Workflow, ShoppingBag, Headphones, CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import './LandingWorkflow.css';
+import connectedCustomerImage from '../assets/connected-customer-experience.png';
 
 const steps = [
   { icon: MessageSquare, title: 'Connect your WhatsApp', text: 'Bring your WhatsApp Business number into a shared workspace so customer conversations have a home.' },
@@ -42,24 +43,12 @@ export default function LandingWorkflow() {
         ))}
       </div>
 
-      <div className="landing-workflow__showcase" data-reveal>
-        <div className="landing-workflow__story">
-          <span className="landing-workflow__eyebrow">A CONNECTED CUSTOMER EXPERIENCE</span>
-          <h2>A quick reply.<br />A smooth handoff.<br /><span>A conversation that continues.</span></h2>
-          <p>Help customers find answers with chatbot replies, then bring in a teammate for the questions that need a personal touch.</p>
-          <ul>{['Shared inbox for customer conversations', 'Contact details and private team notes', 'Visual reply flows with human handoff'].map(text => <li key={text}><Check size={17} aria-hidden="true" />{text}</li>)}</ul>
-          <a href="#pricing-plans" className="landing-workflow__link">Find your plan <ArrowUpRight size={18} aria-hidden="true" /></a>
-        </div>
-        <div className="landing-workflow__conversation" aria-label="Illustrative customer support conversation">
-          <div className="landing-workflow__chat-header"><span className="landing-workflow__avatar"><MessageSquare size={22} aria-hidden="true" /></span><div><strong>Customer support</strong><small>Example conversation</small></div><span className="landing-workflow__status">Shared inbox</span></div>
-          <div className="landing-workflow__messages">
-            <div className="landing-workflow__bubble">Hi! Can someone help me choose a plan?<small>Customer</small></div>
-            <div className="landing-workflow__bubble landing-workflow__bubble--reply">Of course! I can connect you with our team.<small>Chatbot reply <Check size={12} aria-hidden="true" /></small></div>
-            <div className="landing-workflow__handoff"><Users size={15} aria-hidden="true" /> Conversation assigned to a teammate</div>
-            <div className="landing-workflow__bubble landing-workflow__bubble--reply">Happy to help. How many people will be replying to customers?<small>Team member <Check size={12} aria-hidden="true" /></small></div>
-          </div>
-          <div className="landing-workflow__chat-footer"><span>Customer context</span><span>Team collaboration</span><span>One workspace</span></div>
-        </div>
+      <div className="landing-workflow__showcase landing-workflow__showcase--image" data-reveal>
+        <img
+          className="landing-workflow__showcase-image"
+          src={connectedCustomerImage}
+          alt="WhatsApp chatbot connecting a customer conversation with a support team"
+        />
       </div>
 
       <div className="landing-workflow__heading landing-workflow__heading--compact" data-reveal>

@@ -48,6 +48,8 @@
 .landing-workflow__uses article:nth-child(2) > svg { color: #a03e60; }
 .landing-workflow__uses article:nth-child(3) > svg { color: #6c49ac; }
 .landing-workflow__uses a { display: inline-flex; align-items: center; gap: 10px; margin-top: 20px; color: #174f48; font-weight: 700; font-size: 12px; }
+.landing-workflow__showcase--image { display: flex; justify-content: center; align-items: center; padding: 28px; }
+.landing-workflow__showcase-image { display: block; width: min(100%, 760px); height: auto; max-height: 620px; object-fit: contain; border-radius: 22px; margin: 0 auto; filter: drop-shadow(0 24px 34px #17695122); }
 .landing-workflow a:focus-visible { outline: 3px solid #247ac0; outline-offset: 5px; }
 @media (prefers-reduced-motion: no-preference) {
   .landing-workflow [data-reveal] { transition: opacity .7s ease, translate .7s ease, box-shadow .3s ease; }
@@ -71,6 +73,6 @@
 @keyframes workflow-travelling-light { 0% { left: 10%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: 90%; opacity: 0; } }
 @keyframes workflow-ambient { from { background-position: 0% 30%; } to { background-position: 100% 70%; } }
 }
-@media (max-width: 900px) { .landing-workflow__showcase { grid-template-columns: 1fr; padding: 28px; gap: 30px; } .landing-workflow__steps,.landing-workflow__uses { gap: 14px; } .landing-workflow__step,.landing-workflow__uses article { padding: 20px; } }
+@media (max-width: 900px) { .landing-workflow__showcase { grid-template-columns: 1fr; padding: 28px; gap: 30px; } .landing-workflow__showcase--image { padding: 18px; } .landing-workflow__steps,.landing-workflow__uses { gap: 14px; } .landing-workflow__step,.landing-workflow__uses article { padding: 20px; } }
 @media (max-width: 640px) { .landing-workflow { padding: 12px 18px 48px; } .landing-workflow__steps,.landing-workflow__uses { grid-template-columns: 1fr; } .landing-workflow__steps { gap: 18px; padding: 0 8px; } .landing-workflow__steps::before { top: 6%; bottom: 6%; left: 50%; width: 2px; height: auto; right: auto; background: linear-gradient(180deg,#20aa7b,#9074d0,#4297d2); } .landing-workflow__steps::after { top: 6%; left: calc(50% - 6px); width: 12px; height: 12px; animation-name: workflow-travelling-light-vertical; } .landing-workflow__step { min-height: 0; padding: 8px 26px 22px; } .landing-workflow__step::after { top: auto; right: auto; bottom: -15px; left: calc(50% - 5px); } .landing-workflow__step:last-child::after { display: none; } .landing-workflow__step-top > span { top: 15px; right: 12%; } .landing-workflow__showcase { padding: 22px 16px; margin: 36px 0; } .landing-workflow__chat-header { padding: 12px; } .landing-workflow__status { display: none; } .landing-workflow__messages { padding: 14px; } }
 @keyframes workflow-travelling-light-vertical { 0% { top: 6%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { top: 94%; opacity: 0; } }

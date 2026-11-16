@@ -286,7 +286,7 @@
 
 /* Give the price block and CTA a little more breathing room. */
 .pricing-page #pricing-plans .grid > .pricing-plan-card > button {
-  margin-top: 2rem !important;
+  margin-top: 4rem !important;
 }
 
 @media (max-width: 900px) {

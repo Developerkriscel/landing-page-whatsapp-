@@ -97,13 +97,14 @@
 .landing-workflow__uses article p,
 .landing-workflow__uses article a { position: relative; z-index: 1; }
 .landing-workflow__uses article h3 {
-  position: absolute;
+  position: absolute !important;
   z-index: 2;
   top: 31px;
   left: 30px;
   max-width: 72%;
   margin: 0;
-  color: #fff;
+  display: block !important;
+  color: #fff !important;
   font-size: 1.15rem;
   font-weight: 800;
   line-height: 1.2;

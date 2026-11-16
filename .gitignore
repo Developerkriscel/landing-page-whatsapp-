@@ -12,6 +12,3 @@ test-screenshots/
 .env.production
 apps/api/.env
 apps/web/.env
-
-# Local development database, binaries, and process logs
-.local/

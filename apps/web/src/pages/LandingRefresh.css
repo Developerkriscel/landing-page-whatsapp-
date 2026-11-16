@@ -292,6 +292,13 @@
   }
 }
 
+/* Keep the colored plan header inside its own card so adjacent plans never overlap. */
+.pricing-page #pricing-plans .grid > .pricing-plan-card::before {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+}
+
 /* Scale the complete desktop use-cases composition down to fit one screen. */
 @media (min-width: 901px) {
   .pricing-page .feature-services--orbit { padding-top: 38px !important; padding-bottom: 28px !important; }

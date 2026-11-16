@@ -36,6 +36,7 @@ import { registerMetaComplianceRoutes } from './routes/metaCompliance.js';
 import { registerAIRoutes } from './routes/ai.js';
 import { registerKnowledgeBaseRoutes } from './routes/knowledgeBase.js';
 import { registerUploadRoutes, campaignMediaDir } from './routes/uploads.js';
+import { registerLandingOfferRoutes } from './routes/landingOffer.js';
 
 // Extend Fastify instance with custom properties
 declare module 'fastify' {
@@ -259,6 +260,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(registerAIRoutes, { prefix: '/api/v1' });
   await app.register(registerKnowledgeBaseRoutes, { prefix: '/api/v1' });
   await app.register(registerUploadRoutes, { prefix: '/api/v1' });
+  await app.register(registerLandingOfferRoutes, { prefix: '/api/v1' });
 
   // Cleanup on shutdown
   app.addHook('onClose', async () => {

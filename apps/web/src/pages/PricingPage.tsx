@@ -6,7 +6,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, MessageSquare, Users, Bot, Zap, Shield, ArrowUpRight, ChevronDown } from 'lucide-react';
+import { Check, MessageSquare, Users, Bot, Zap, Shield, ArrowUpRight, ChevronDown, X } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import kriscelKSrc from '../assets/kriscel-k.jpeg';
@@ -58,6 +58,13 @@ interface Plan {
   hasABTesting: boolean;
 }
 
+interface LandingOffer {
+  enabled: boolean;
+  message: string;
+  buttonText: string;
+  buttonHref: string;
+}
+
 const features = [
   {
     icon: MessageSquare,
@@ -89,6 +96,7 @@ const features = [
 export default function PricingPage() {
   const navigate = useNavigate();
   const [faqOpen, setFaqOpen] = useState(false);
+  const [offerDismissed, setOfferDismissed] = useState(false);
   const { user } = useAuth();
 
   const { data: plansData } = useQuery<{ data: Plan[] }>({
@@ -100,6 +108,13 @@ export default function PricingPage() {
   });
 
   const plans = plansData?.data || [];
+
+  const { data: landingOfferData } = useQuery<{ data: LandingOffer }>({
+    queryKey: ['landing-offer'],
+    queryFn: async () => (await api.get('/landing/offer')).data,
+    staleTime: 60_000,
+  });
+  const landingOffer = landingOfferData?.data;
   const formatInr = (amount: number) =>
     new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -452,6 +467,21 @@ export default function PricingPage() {
           © {new Date().getFullYear()} Kriscel Tech Private Limited. All rights reserved.
         </p>
       </footer>
+
+      {landingOffer?.enabled && !offerDismissed && (
+        <div className="landing-offer-banner" role="region" aria-label="Special offer">
+          <p>{landingOffer.message}</p>
+          <a href={landingOffer.buttonHref}>{landingOffer.buttonText}</a>
+          <button
+            type="button"
+            className="landing-offer-banner__close"
+            aria-label="Dismiss offer"
+            onClick={() => setOfferDismissed(true)}
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

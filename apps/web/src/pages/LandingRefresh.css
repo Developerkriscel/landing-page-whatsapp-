@@ -289,6 +289,74 @@
   margin-top: 4rem !important;
 }
 
+.landing-offer-banner {
+  position: fixed;
+  z-index: 70;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 58px;
+  padding: 10px 56px 10px 24px;
+  color: #fff;
+  background: linear-gradient(100deg, #35bd4d, #22ae43 55%, #38bf4b);
+  box-shadow: 0 -10px 30px -20px #14552a;
+}
+
+.landing-offer-banner p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.landing-offer-banner a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 6px 18px;
+  border-radius: 10px;
+  color: #162b1d;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.landing-offer-banner a:hover,
+.landing-offer-banner a:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -12px #0c3e1b;
+}
+
+.landing-offer-banner__close {
+  position: absolute;
+  right: 18px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.landing-offer-banner__close:hover,
+.landing-offer-banner__close:focus-visible { background: #ffffff26; }
+
+@media (max-width: 640px) {
+  .landing-offer-banner { gap: 10px; padding: 10px 48px 10px 12px; }
+  .landing-offer-banner p { font-size: 12px; line-height: 1.35; }
+  .landing-offer-banner a { padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+  .landing-offer-banner__close { right: 8px; }
+}
+
 @media (max-width: 900px) {
   .pricing-page #pricing-plans .grid > .pricing-plan-card,
   .pricing-page #pricing-plans .grid > .pricing-plan-card--popular {

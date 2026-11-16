@@ -2,7 +2,7 @@
  * SuperAdmin Settings Page
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import {
@@ -17,6 +17,7 @@ import {
   Save,
   Check,
   Loader2,
+  Megaphone,
 } from 'lucide-react';
 
 const TABS = [
@@ -28,6 +29,7 @@ const TABS = [
   { id: 'integrations', label: 'Integrations', icon: Globe },
   { id: 'database', label: 'Database', icon: Database },
   { id: 'api', label: 'API Keys', icon: Key },
+  { id: 'offer', label: 'Landing Offer', icon: Megaphone },
 ];
 
 export default function SuperAdminSettingsPage() {
@@ -45,6 +47,11 @@ export default function SuperAdminSettingsPage() {
   });
 
   const settings = settingsData || {};
+
+  const { data: landingOfferData, isLoading: landingOfferLoading } = useQuery({
+    queryKey: ['landing-offer'],
+    queryFn: async () => (await api.get('/landing/offer')).data.data,
+  });
 
   const [generalForm, setGeneralForm] = useState({
     platformName: '',
@@ -85,6 +92,17 @@ export default function SuperAdminSettingsPage() {
     billingAlerts: 'true',
     digestFrequency: 'daily',
   });
+
+  const [offerForm, setOfferForm] = useState({
+    enabled: true,
+    message: 'Get ₹3050 worth for just ₹1425 with Exclusive Launch Offer 🎉',
+    buttonText: 'Check Offer Now',
+    buttonHref: '/pricing#pricing-plans',
+  });
+
+  useEffect(() => {
+    if (landingOfferData) setOfferForm(landingOfferData);
+  }, [landingOfferData]);
 
   // Sync fetched settings into forms once loaded
   useState(() => {
@@ -127,6 +145,15 @@ export default function SuperAdminSettingsPage() {
   const handleSave = (settings: any) => {
     mutation.mutate(settings);
   };
+
+  const offerMutation = useMutation({
+    mutationFn: async () => (await api.patch('/landing/offer', offerForm)).data,
+    onSuccess: () => {
+      setSaved('offer');
+      setTimeout(() => setSaved(null), 2000);
+      queryClient.invalidateQueries({ queryKey: ['landing-offer'] });
+    },
+  });
 
   const activeTabData = TABS.find(t => t.id === activeTab);
 
@@ -289,6 +316,70 @@ export default function SuperAdminSettingsPage() {
                 </button>
               </div>
             </>
+          )}
+
+          {activeTab === 'offer' && (
+            <div className="card-apple p-6">
+              <h2 className="text-lg font-semibold text-ios-dark mb-2 flex items-center gap-2">
+                <Megaphone className="w-5 h-5 text-wa-green" />
+                Landing page offer
+              </h2>
+              <p className="text-sm text-ios-secondary mb-6">
+                Control the dismissible offer banner shown at the bottom of the public landing page.
+              </p>
+              {landingOfferLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-wa-green" />
+              ) : (
+                <div className="space-y-5 max-w-2xl">
+                  <label className="flex items-center gap-3 text-sm font-medium text-ios-secondary">
+                    <input
+                      type="checkbox"
+                      checked={offerForm.enabled}
+                      onChange={(e) => setOfferForm({ ...offerForm, enabled: e.target.checked })}
+                      className="h-4 w-4 accent-wa-green"
+                    />
+                    Show offer banner
+                  </label>
+                  <div>
+                    <label className="block text-sm font-medium text-ios-secondary mb-1.5">Offer message</label>
+                    <input
+                      value={offerForm.message}
+                      onChange={(e) => setOfferForm({ ...offerForm, message: e.target.value })}
+                      className="input-apple w-full"
+                      maxLength={180}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-ios-secondary mb-1.5">Button text</label>
+                      <input
+                        value={offerForm.buttonText}
+                        onChange={(e) => setOfferForm({ ...offerForm, buttonText: e.target.value })}
+                        className="input-apple w-full"
+                        maxLength={40}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-ios-secondary mb-1.5">Button link</label>
+                      <input
+                        value={offerForm.buttonHref}
+                        onChange={(e) => setOfferForm({ ...offerForm, buttonHref: e.target.value })}
+                        className="input-apple w-full"
+                        maxLength={240}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => offerMutation.mutate()}
+                    disabled={offerMutation.isPending}
+                    className="btn-apple bg-wa-gradient flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {saved === 'offer' ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                    {saved === 'offer' ? 'Saved!' : offerMutation.isPending ? 'Saving...' : 'Save offer'}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Security */}

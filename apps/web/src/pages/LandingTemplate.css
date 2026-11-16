@@ -1,0 +1,277 @@
+/*
+ * Kriscel WA landing-page template layer.
+ *
+ * This file intentionally scopes styling to the surrounding landing sections.
+ * The trusted-business logo strip and the 12-feature use-case orbit keep their
+ * existing layout and interaction styles unchanged.
+ */
+
+.pricing-page {
+  --template-ink: #123c32;
+  --template-muted: #5f7770;
+  --template-green: #078a65;
+  --template-bright: #24c96b;
+  --template-mint: #dff8eb;
+  --template-line: #cfe9dd;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(36, 201, 107, .14), transparent 23rem),
+    radial-gradient(circle at 92% 37%, rgba(8, 145, 117, .10), transparent 26rem),
+    #f8fcfa !important;
+  color: var(--template-ink);
+}
+
+.pricing-page > nav .glass-nav {
+  border-bottom: 1px solid rgba(207, 233, 221, .7) !important;
+  background: rgba(255, 255, 255, .86) !important;
+  box-shadow: 0 14px 34px -26px rgba(8, 92, 66, .45) !important;
+  backdrop-filter: blur(18px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
+}
+
+.pricing-page > nav .glass-nav img[alt="Kriscel"] {
+  transform: scale(1.34) !important;
+  filter: drop-shadow(0 4px 9px rgba(15, 118, 82, .2));
+}
+
+.pricing-page > nav .pricing-nav-button--login {
+  border-color: #b8ddce !important;
+  background: #fff !important;
+}
+
+.pricing-page > nav .pricing-nav-button--signup {
+  background: linear-gradient(125deg, #087b5c, #0aa27c) !important;
+  box-shadow: 0 12px 22px -14px rgba(0, 113, 77, .8), inset 0 1px rgba(255,255,255,.48) !important;
+}
+
+/* Hero: bright SaaS introduction with a controlled emerald visual anchor. */
+.animated-hero {
+  min-height: 670px;
+  background:
+    radial-gradient(circle at 9% 20%, rgba(36, 201, 107, .22), transparent 23rem),
+    radial-gradient(circle at 78% 4%, rgba(113, 223, 171, .22), transparent 27rem),
+    linear-gradient(145deg, #f9fdfb 0%, #eefaf4 55%, #f8fcfa 100%) !important;
+}
+
+.animated-hero__layout {
+  max-width: 1240px !important;
+  min-height: 670px;
+  padding: 74px 34px 86px !important;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr) !important;
+  gap: clamp(36px, 6vw, 90px) !important;
+}
+
+.animated-hero__copy { max-width: 590px; }
+.animated-hero h1 {
+  color: var(--template-ink);
+  font-size: clamp(2.7rem, 4.25vw, 4.65rem) !important;
+  line-height: 1.01 !important;
+  letter-spacing: -.065em !important;
+}
+
+.animated-hero__word--chats,
+.animated-hero__word--customers,
+.animated-hero__word--team,
+.animated-hero h1 strong {
+  color: var(--template-green) !important;
+  background: linear-gradient(110deg, #057b5d, #19b873 48%, #078a83) !important;
+  background-size: 220% 100% !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.animated-hero h1::after {
+  width: min(270px, 68%) !important;
+  height: 5px !important;
+  margin-top: 24px !important;
+  background: linear-gradient(90deg, #0b9669, #45d47e, #087f70) !important;
+  box-shadow: 0 0 20px rgba(30, 194, 117, .32) !important;
+}
+
+.animated-hero__copy > p {
+  max-width: 520px;
+  margin-top: 22px !important;
+  color: var(--template-muted) !important;
+  font-size: 1.03rem !important;
+  line-height: 1.7 !important;
+}
+
+.animated-hero__actions { margin-top: 30px !important; }
+.animated-hero__actions a {
+  min-height: 48px;
+  padding: 13px 19px !important;
+  border-radius: 14px !important;
+  border-color: #b9dfd0 !important;
+  color: #17614d !important;
+  background: rgba(255,255,255,.82) !important;
+}
+.animated-hero__actions a:first-child {
+  border-color: #07805e !important;
+  background: linear-gradient(120deg, #07815f, #11a876) !important;
+  box-shadow: 0 15px 26px -16px rgba(0, 115, 78, .9) !important;
+}
+.animated-hero__capabilities { color: #527268 !important; }
+.animated-hero__capabilities svg { color: #0a9b6c !important; }
+
+.animated-hero__visual { padding: 24px 0 !important; }
+.animated-hero__orbit {
+  inset: -22px -34px !important;
+  border-color: rgba(54, 190, 132, .22) !important;
+}
+.animated-hero__workspace {
+  border: 1px solid rgba(255,255,255,.85) !important;
+  border-radius: 25px !important;
+  background: rgba(255,255,255,.82) !important;
+  box-shadow: 0 32px 72px -34px rgba(4, 88, 62, .65), 0 0 0 8px rgba(255,255,255,.35) !important;
+  overflow: hidden;
+}
+.animated-hero__window {
+  padding: 16px 19px !important;
+  color: #204e41;
+  background: rgba(255,255,255,.92);
+}
+.animated-hero__video {
+  width: 100% !important;
+  border-radius: 0 !important;
+  background: #062d24 !important;
+  aspect-ratio: 16 / 9;
+  object-fit: cover !important;
+}
+.animated-hero__badge {
+  border-color: rgba(255,255,255,.9) !important;
+  box-shadow: 0 18px 32px -18px rgba(6, 91, 64, .7) !important;
+}
+.animated-hero__badge--contacts { background: #e2faee !important; color: #147457 !important; }
+.animated-hero__badge--flow { background: #fff4d5 !important; color: #866012 !important; }
+
+/* Workflow: convert the existing content into the reference's three-step rail. */
+.landing-workflow {
+  max-width: 1280px !important;
+  padding: 88px 34px 100px !important;
+  color: var(--template-ink) !important;
+  background:
+    radial-gradient(ellipse at 0 46%, rgba(199, 247, 222, .55), transparent 34%),
+    radial-gradient(ellipse at 100% 48%, rgba(213, 244, 228, .6), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,.75), rgba(242,251,247,.8)) !important;
+}
+.landing-workflow__heading { margin-bottom: 42px !important; }
+.landing-workflow__eyebrow { color: #078666 !important; }
+.landing-workflow h2 { color: var(--template-ink) !important; }
+.landing-workflow h2 span { color: #087f82 !important; }
+.landing-workflow__steps { gap: 24px !important; padding-inline: 0 !important; }
+.landing-workflow__steps::before {
+  right: 12%; left: 12%;
+  background: linear-gradient(90deg, #28bd7b, #7ed9a9, #28a984) !important;
+}
+.landing-workflow__step {
+  min-height: 234px !important;
+  padding: 0 28px 25px !important;
+  border: 1px solid #c6e8d9 !important;
+  border-radius: 26px !important;
+  background: linear-gradient(145deg, rgba(224,250,237,.92), rgba(255,255,255,.82)) !important;
+  box-shadow: 0 24px 45px -34px rgba(12, 91, 63, .65) !important;
+  text-align: left !important;
+}
+.landing-workflow__step--1 { background: linear-gradient(145deg, #e9e2ff, #fff) !important; border-color: #d7c9f2 !important; }
+.landing-workflow__step--2 { background: linear-gradient(145deg, #e0f2ff, #fff) !important; border-color: #c7e2f1 !important; }
+.landing-workflow__step::before, .landing-workflow__step::after { display: none; }
+.landing-workflow__step-top { align-items: flex-start !important; padding-top: 26px; }
+.landing-workflow__step-top > svg {
+  width: 29px !important; height: 29px !important;
+  padding: 14px !important;
+  border: 5px solid #fff !important;
+  background: linear-gradient(145deg, #25c878, #079d68) !important;
+  box-shadow: 0 0 0 1px #0a8d65, 0 14px 22px -14px #087e5d !important;
+}
+.landing-workflow__step--1 .landing-workflow__step-top > svg { background: linear-gradient(145deg, #9c82e2, #704cb0) !important; box-shadow: 0 0 0 1px #704cb0, 0 14px 22px -14px #704cb0 !important; }
+.landing-workflow__step--2 .landing-workflow__step-top > svg { background: linear-gradient(145deg, #65c4ee, #2a91c6) !important; box-shadow: 0 0 0 1px #2a91c6, 0 14px 22px -14px #2a91c6 !important; }
+.landing-workflow__step-top > span { top: 35px !important; right: 26px !important; color: #699188 !important; }
+.landing-workflow__step h3 { margin-top: 23px !important; }
+.landing-workflow__step p { max-width: 330px; }
+
+.landing-workflow__showcase {
+  margin: 78px 0 !important;
+  border-color: #cbe8db !important;
+  border-radius: 30px !important;
+  background: linear-gradient(135deg, #ecfbf3, #fff 55%, #e5f7ef) !important;
+  box-shadow: 0 28px 58px -42px rgba(13, 87, 61, .7) !important;
+}
+.landing-workflow__story h2 span { color: #078a65 !important; }
+.landing-workflow__link { background: linear-gradient(120deg, #087c5e, #0aa77a) !important; }
+.landing-workflow__conversation { border-color: #d4eee2 !important; }
+.landing-workflow__messages { background: linear-gradient(145deg, #f4fcf8, #e6f8ef) !important; }
+.landing-workflow__bubble--reply { background: #d4f5e4 !important; }
+
+/* Pricing: keep all plan labels, prices and features unchanged; restyle the shell. */
+#pricing-plans {
+  max-width: 1210px !important;
+  padding-inline: 22px !important;
+  padding-bottom: 88px !important;
+}
+#pricing-plans .grid { gap: 18px !important; }
+#pricing-plans .grid > .pricing-plan-card {
+  min-height: 650px !important;
+  padding: 1.25rem !important;
+  border-color: #cde8db !important;
+  border-radius: 25px !important;
+  box-shadow: 0 24px 50px -37px rgba(4, 91, 62, .75), inset 0 1px #fff !important;
+}
+#pricing-plans .grid > .pricing-plan-card::before,
+#pricing-plans .grid > .pricing-plan-card:nth-child(3)::before {
+  height: 218px !important;
+  background: linear-gradient(145deg, #39c77e, #087c63) !important;
+}
+#pricing-plans .grid > .pricing-plan-card:nth-child(2)::before {
+  background: linear-gradient(145deg, #24d86e, #07986e) !important;
+}
+#pricing-plans .grid > .pricing-plan-card:nth-child(3)::before {
+  background: linear-gradient(145deg, #69d9a2, #118e72) !important;
+}
+#pricing-plans .grid > .pricing-plan-card:not(.pricing-plan-card--popular) > button {
+  background: linear-gradient(120deg, #087d60, #109e79) !important;
+}
+#pricing-plans .grid > .pricing-plan-card--popular {
+  box-shadow: 0 30px 58px -34px rgba(5, 126, 84, .8), 0 0 0 5px rgba(24, 175, 113, .12), inset 0 1px #fff !important;
+}
+#pricing-plans .grid > .pricing-plan-card--popular > button {
+  color: #07865f !important;
+  background: #fff !important;
+}
+.pricing-enterprise-card {
+  background: linear-gradient(120deg, #23c86c, #0c9e76 55%, #087962) !important;
+}
+
+/* FAQ and footer use the same calm green system rather than blue accents. */
+section:has(.pricing-faq-dropdown) {
+  padding-top: 76px !important;
+  padding-bottom: 78px !important;
+}
+section:has(.pricing-faq-dropdown) h2 { color: var(--template-ink) !important; }
+.pricing-faq-dropdown__trigger {
+  border-color: #cce8dc !important;
+  background: linear-gradient(120deg, #fff, #f1fcf6) !important;
+  box-shadow: 0 18px 36px -28px rgba(5, 91, 63, .7), inset 0 1px #fff !important;
+}
+.pricing-faq-dropdown__trigger:hover { border-color: #45bd8a !important; }
+.pricing-page footer { border-top: 1px solid #d7ece2; background: rgba(255,255,255,.62); }
+
+@media (max-width: 900px) {
+  .animated-hero { min-height: 0; }
+  .animated-hero__layout { min-height: 0; padding: 62px 24px 70px !important; }
+  .landing-workflow { padding: 64px 20px 74px !important; }
+  .landing-workflow__step { text-align: center !important; }
+  .landing-workflow__step-top { align-items: center !important; }
+  #pricing-plans { padding-inline: 16px !important; }
+}
+
+@media (max-width: 640px) {
+  .animated-hero h1 { font-size: clamp(2.25rem, 11vw, 3.5rem) !important; }
+  .animated-hero__layout { padding-inline: 18px !important; }
+  .animated-hero__badge { transform: scale(.88); }
+  .landing-workflow__showcase { padding: 24px 18px !important; }
+  #pricing-plans .grid > .pricing-plan-card { min-height: 0 !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pricing-page *, .pricing-page *::before, .pricing-page *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

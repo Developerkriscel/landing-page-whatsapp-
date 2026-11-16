@@ -18,6 +18,7 @@ import TrustLogos from '../components/TrustLogos';
 import LandingSpotlight from '../components/LandingSpotlight';
 import LandingWorkflow from '../components/LandingWorkflow';
 import './LandingRefresh.css';
+import './LandingTemplate.css';
 
 interface CashfreePlanQuote {
   baseInr: number;

@@ -4,12 +4,20 @@
  */
 
 import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, MessageSquare, Users, Bot, Zap, Shield } from 'lucide-react';
+import { Check, MessageSquare, Users, Bot, Zap, Shield, ArrowUpRight, ChevronDown } from 'lucide-react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import kriscelKSrc from '../assets/kriscel-k.jpeg';
+import AnimatedHero from '../components/AnimatedHero';
 import { getPlanInterval, getIntervalLabel } from '../lib/subscriptionTerms';
+import './PricingPage.css';
+import FeaturesServices from '../components/FeaturesServices';
+import TrustLogos from '../components/TrustLogos';
+import LandingSpotlight from '../components/LandingSpotlight';
+import LandingWorkflow from '../components/LandingWorkflow';
+import './LandingRefresh.css';
 
 interface CashfreePlanQuote {
   baseInr: number;
@@ -80,6 +88,7 @@ const features = [
 
 export default function PricingPage() {
   const navigate = useNavigate();
+  const [faqOpen, setFaqOpen] = useState(false);
   const { user } = useAuth();
 
   const { data: plansData } = useQuery<{ data: Plan[] }>({
@@ -137,13 +146,19 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--apple-bg)]">
+    <div className="pricing-page relative min-h-screen overflow-hidden bg-[var(--apple-bg)]">
       {/* Apple Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="blob-apple-1 -top-60 -left-60" />
         <div className="blob-apple-2 top-1/3 -right-60" />
         <div className="blob-apple-3 bottom-40 left-1/3" />
         <div className="absolute inset-0 bg-grid-apple" />
+      </div>
+      <div className="pricing-ambient-effects" aria-hidden="true">
+        <span className="pricing-ambient-effects__spark pricing-ambient-effects__spark--one" />
+        <span className="pricing-ambient-effects__spark pricing-ambient-effects__spark--two" />
+        <span className="pricing-ambient-effects__spark pricing-ambient-effects__spark--three" />
+        <span className="pricing-ambient-effects__spark pricing-ambient-effects__spark--four" />
       </div>
 
       {/* Navigation */}
@@ -169,15 +184,16 @@ export default function PricingPage() {
                 <>
                   <button
                     onClick={() => navigate('/login')}
-                    className="btn-apple btn-apple-ghost px-4 py-1.5 text-sm"
+                    className="pricing-nav-button pricing-nav-button--login"
                   >
                     Login
                   </button>
                   <button
                     onClick={() => navigate('/register')}
-                    className="btn-apple btn-wa-green px-4 py-1.5 text-sm"
+                    className="pricing-nav-button pricing-nav-button--signup"
                   >
                     Sign up
+                    <ArrowUpRight size={16} strokeWidth={2.25} aria-hidden="true" />
                   </button>
                 </>
               )}
@@ -186,21 +202,16 @@ export default function PricingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-20 pb-12 text-center px-4">
-        <h1 className="text-4xl md:text-5xl font-bold text-primary-apple mb-6 tracking-tight">
-          Customer Support Helpdesk &amp; Omnichannel CRM Software
-        </h1>
-        <p className="text-lg text-secondary-apple mb-8 max-w-3xl mx-auto">
-          B2B SaaS for managing customer conversations, support workflows, WhatsApp-connected inboxes,
-          chatbot automation, and team collaboration.
-        </p>
+      <AnimatedHero />
 
-      </section>
+      <TrustLogos />
+
+      <FeaturesServices plans={plans} workspaceAccess={!!user && !user.isSuperadmin} />
 
       {/* Pricing Cards */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <LandingWorkflow />
+      <section id="pricing-plans" className="relative max-w-[88rem] mx-auto px-1 sm:px-2 lg:px-4 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {plans.filter(p => p.tier !== 'ENTERPRISE').map((plan) => {
             const isPopular = plan.tier === 'GROWTH';
             const interval = getPlanInterval(plan.tier);
@@ -213,12 +224,13 @@ export default function PricingPage() {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-ios-2xl p-6 ${
+                className={`pricing-plan-card relative rounded-ios-2xl p-6 ${
                   isPopular
-                    ? 'bg-wa-gradient shadow-wa-green scale-[1.02]'
+                    ? 'pricing-plan-card--popular bg-wa-gradient shadow-wa-green scale-[1.02]'
                     : 'card-apple'
                 }`}
               >
+                <LandingSpotlight />
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-white text-wa-green text-xs font-semibold rounded-full shadow-apple">
                     Most Popular
@@ -228,13 +240,6 @@ export default function PricingPage() {
                 <h3 className={`text-xl font-bold ${isPopular ? 'text-white' : 'text-primary-apple'}`}>
                   {getIntervalLabel(interval)}
                 </h3>
-                <p className={`mt-2 min-h-[48px] text-sm ${isPopular ? 'text-white/80' : 'text-secondary-apple'}`}>
-                  {plan.description}
-                </p>
-
-                <p className={`mt-5 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${isPopular ? 'bg-white/15 text-white' : 'bg-wa-green/10 text-wa-green'}`}>
-                  {interval === 'monthly' ? 'Monthly billing' : interval === 'six_month' ? '6-Month billing' : '12-Month billing'}
-                </p>
                 <p className={`mt-1 text-xs ${isPopular ? 'text-white/70' : 'text-secondary-apple'}`}>
                   {plan.tier === 'STARTER' ? '500 credits included' : plan.tier === 'GROWTH' ? '3,000 credits included' : '6,000 credits included'}
                 </p>
@@ -332,14 +337,14 @@ export default function PricingPage() {
         </div>
 
         {/* Enterprise */}
-        <div className="mt-6 rounded-ios-2xl bg-wa-gradient p-8 text-white text-center shadow-wa-green">
-          <h3 className="text-2xl font-bold mb-2">Need more?</h3>
-          <p className="mb-6 opacity-90">
+        <div className="pricing-enterprise-card mt-5 rounded-ios-2xl bg-wa-gradient p-5 text-white text-center shadow-wa-green">
+          <h3 className="text-xl font-bold mb-1.5">Need more?</h3>
+          <p className="mb-4 text-sm opacity-90">
             Custom Enterprise plans with unlimited scale, white-label option, SLA, and dedicated support.
           </p>
           <button
             onClick={() => navigate('/contact')}
-            className="btn-apple bg-white text-wa-green hover:bg-white/90 px-6 py-3"
+            className="btn-apple bg-white text-wa-green hover:bg-white/90 px-5 py-2.5 text-sm"
           >
             Contact Sales
           </button>
@@ -347,7 +352,7 @@ export default function PricingPage() {
       </section>
 
       {/* Features */}
-      <section className="relative py-20">
+      <section className="relative py-20 hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-primary-apple mb-4 tracking-tight">
@@ -375,7 +380,18 @@ export default function PricingPage() {
       <section className="py-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center text-primary-apple mb-12 tracking-tight">Frequently Asked Questions</h2>
-          <div className="space-y-4">
+          <div className="pricing-faq-dropdown">
+            <button
+              type="button"
+              className="pricing-faq-dropdown__trigger"
+              aria-expanded={faqOpen}
+              aria-controls="pricing-faq-list"
+              onClick={() => setFaqOpen((open) => !open)}
+            >
+              <span>{faqOpen ? 'Hide frequently asked questions' : 'View all frequently asked questions'}</span>
+              <ChevronDown aria-hidden="true" className={`pricing-faq-chevron ${faqOpen ? 'pricing-faq-chevron--open' : ''}`} />
+            </button>
+            {faqOpen && <div id="pricing-faq-list" className="pricing-faq-dropdown__list">
             {[
               {
                 q: 'How does the free trial work?',
@@ -406,41 +422,12 @@ export default function PricingPage() {
                 a: 'No. Prepaid plan purchases are for the selected term and do not auto-renew.',
               },
             ].map((faq) => (
-              <div key={faq.q} className="card-apple p-5">
-                <h3 className="font-semibold text-primary-apple mb-2">{faq.q}</h3>
-                <p className="text-secondary-apple">{faq.a}</p>
+              <div key={faq.q} className="pricing-faq-item card-apple">
+                <h3 className="pricing-faq-question">{faq.q}</h3>
+                <p className="pricing-faq-answer text-secondary-apple">{faq.a}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-ios-2xl bg-wa-gradient p-10 text-center shadow-wa-green overflow-hidden">
-            <div className="absolute inset-0 opacity-10">
-              <svg className="w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                  <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5" opacity="0.3"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid2)" />
-              </svg>
-            </div>
-            <div className="relative z-10">
-              <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">Ready to get started?</h2>
-              <p className="text-xl text-white/80 mb-8">
-                Create an account to get started with Kriscel WA.
-              </p>
-              <button
-                onClick={() => navigate(user ? '/billing' : '/register')}
-                className="btn-apple bg-white text-wa-green hover:bg-white/90 px-8 py-4 text-lg shadow-apple"
-              >
-                {user ? 'View billing' : 'Sign up'}
-              </button>
-            </div>
+            </div>}
           </div>
         </div>
       </section>

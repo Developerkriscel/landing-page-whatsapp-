@@ -299,6 +299,45 @@
   width: 100% !important;
 }
 
+/* Compact the desktop plan row while improving readability. */
+@media (min-width: 901px) {
+  .pricing-page #pricing-plans .grid > .pricing-plan-card {
+    height: 700px !important;
+    min-height: 700px !important;
+    padding: 1.15rem 1.25rem 1rem !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card::before {
+    height: 218px !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card > h3 {
+    font-size: 1.7rem !important;
+    font-weight: 800 !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card > p:first-of-type {
+    font-size: 1rem !important;
+    font-weight: 650 !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card > div.mt-6 > span:first-child {
+    font-size: clamp(2.7rem, 4vw, 3.35rem) !important;
+    font-weight: 850 !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card > ul {
+    gap: .45rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .pricing-page #pricing-plans .grid > .pricing-plan-card > ul > li {
+    font-size: .88rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+  }
+}
+
 /* Scale the complete desktop use-cases composition down to fit one screen. */
 @media (min-width: 901px) {
   .pricing-page .feature-services--orbit { padding-top: 38px !important; padding-bottom: 28px !important; }

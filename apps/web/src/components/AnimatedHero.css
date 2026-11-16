@@ -189,3 +189,53 @@
   .animated-hero__visual-stat { margin-top: 14px; }
   .animated-hero__visual-stat strong { font-size: 24px; }
 }
+
+/* Compact desktop composition so the hero fits cleanly in the first viewport. */
+@media (min-width: 801px) {
+  .animated-hero__layout {
+    min-height: calc(100svh - 78px);
+    padding-top: clamp(14px, 2.2vw, 28px) !important;
+    padding-bottom: clamp(30px, 4vw, 58px) !important;
+    align-items: center;
+  }
+
+  .animated-hero h1 {
+    font-size: clamp(40px, 4.1vw, 64px) !important;
+  }
+
+  .animated-hero__visual {
+    min-height: 0 !important;
+    height: min(70svh, 610px);
+    padding-top: 8px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .animated-hero__workspace {
+    max-height: calc(100svh - 150px);
+  }
+
+  .animated-hero__video {
+    height: min(430px, calc(100svh - 235px)) !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .animated-hero__layout {
+    min-height: auto;
+    padding-top: 24px !important;
+    padding-bottom: 42px !important;
+  }
+
+  .animated-hero__visual {
+    height: auto;
+    min-height: 390px !important;
+  }
+
+  .animated-hero__workspace {
+    max-height: none;
+  }
+
+  .animated-hero__video {
+    height: 390px !important;
+  }
+}

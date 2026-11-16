@@ -107,6 +107,69 @@
 #pricing-plans .grid > .pricing-plan-card:nth-child(3)::before { background: linear-gradient(145deg, #6950a6, #4c3485); }
 .pricing-plan-card:hover::before { transform: none; }
 
+/* Reference-inspired subscription cards: colored tier headers, soft wave edge, and a raised featured plan. */
+.pricing-page #pricing-plans { padding-inline: clamp(18px, 5vw, 72px); }
+.pricing-page #pricing-plans > .grid { max-width: 1160px; margin-inline: auto; align-items: stretch; gap: clamp(22px, 3vw, 34px); }
+.pricing-page #pricing-plans .grid > .pricing-plan-card {
+  --plan-color: #149b80;
+  --plan-deep: #08745a;
+  min-height: 610px !important;
+  padding: 1.45rem 1.35rem 1.35rem !important;
+  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--plan-color) 28%, #d9e6e2) !important;
+  border-radius: 28px !important;
+  background: #fff !important;
+  box-shadow: 0 20px 42px -28px color-mix(in srgb, var(--plan-deep) 42%, transparent), 0 0 0 4px color-mix(in srgb, var(--plan-color) 7%, transparent) !important;
+  transform: translateY(0);
+}
+.pricing-page #pricing-plans .grid > .pricing-plan-card:nth-child(1) { --plan-color: #b3832c; --plan-deep: #8b5d08; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card:nth-child(2) { --plan-color: #20c96b; --plan-deep: #079879; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card:nth-child(3) { --plan-color: #7860b6; --plan-deep: #553b91; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: -10%;
+  left: -10%;
+  width: 120%;
+  height: 238px;
+  border-radius: 28px 28px 50% 50% / 28px 28px 32% 32%;
+  background: linear-gradient(145deg, var(--plan-color), var(--plan-deep));
+  box-shadow: inset 0 1px #ffffff63;
+  content: '';
+  pointer-events: none;
+  opacity: 1;
+  transform: none;
+}
+.pricing-page #pricing-plans .grid > .pricing-plan-card::after { display: none; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > h3,
+.pricing-page #pricing-plans .grid > .pricing-plan-card > p:first-of-type,
+.pricing-page #pricing-plans .grid > .pricing-plan-card > div.mt-6 > span,
+.pricing-page #pricing-plans .grid > .pricing-plan-card > div.mt-6 span.text-secondary-apple { color: #fff !important; text-shadow: 0 1px 8px #063e3025; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > h3 { font-size: 1.55rem !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > div.mt-6 { margin-top: 1.1rem !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > div.mt-6 > span:first-child { font-size: clamp(2.35rem, 4vw, 3.15rem) !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > button {
+  z-index: 2;
+  min-height: 48px !important;
+  margin-top: 1rem !important;
+  border-radius: 14px !important;
+  background: linear-gradient(110deg, #263c39, #112b28) !important;
+  box-shadow: 0 14px 24px -16px #0c3932cc, inset 0 1px #ffffff4d;
+}
+.pricing-page #pricing-plans .grid > .pricing-plan-card--popular > button { background: #fff !important; color: var(--plan-deep) !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > ul { margin-top: 1.25rem !important; gap: .55rem; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > ul span { color: #405952 !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card > ul svg { color: #16ae61 !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card--popular { transform: translateY(-10px) scale(1.025); border-color: #16a873 !important; box-shadow: 0 28px 54px -28px #087f6099, 0 0 0 5px #16a87322 !important; }
+.pricing-page #pricing-plans .grid > .pricing-plan-card:hover { transform: translateY(-10px) scale(1.02); }
+.pricing-page #pricing-plans .grid > .pricing-plan-card--popular:hover { transform: translateY(-14px) scale(1.04); }
+@media (max-width: 900px) {
+  .pricing-page #pricing-plans .grid > .pricing-plan-card--popular,
+  .pricing-page #pricing-plans .grid > .pricing-plan-card--popular:hover { transform: none; }
+  .pricing-page #pricing-plans .grid > .pricing-plan-card { min-height: 0 !important; }
+}
+
 /* Compact plan CTA buttons without changing the card content. */
 .pricing-plan-card > button {
   min-height: 36px !important;

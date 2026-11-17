@@ -50,6 +50,7 @@ const PUBLIC_ROUTES = [
   '/api/v1/auth/reset-password',
   '/api/v1/auth/refresh',
   '/api/v1/plans',
+  '/api/v1/landing/offer',
   '/api/v1/credits/rates',
   '/api/v1/credits/rates/:countryCode',
   '/api/v1/credits/currencies',

@@ -7,7 +7,7 @@ export default function AnimatedHero() {
   return (
     <section className="animated-hero" aria-labelledby="animated-hero-title">
       <div className="animated-hero__aurora" aria-hidden="true"><i /><i /><i /></div>
-      <div className="animated-hero__layout">
+      <div className="animated-hero__layout mt-[-25px]">
         <div className="animated-hero__copy">
           <h1 id="animated-hero-title">
             <span className="animated-hero__line">Your <em className="animated-hero__word animated-hero__word--chats">WhatsApp Chats,</em></span>
@@ -27,11 +27,11 @@ export default function AnimatedHero() {
             <video className="animated-hero__video" src={heroVideoSrc} autoPlay muted loop playsInline controls preload="metadata" aria-label="Kriscel WA product video" />
           </div>
           </div>
-          <aside className="animated-hero__visual-rail" aria-label="Kriscel WA workspace summary">
+          {/* <aside className="animated-hero__visual-rail" aria-label="Kriscel WA workspace summary">
             <span className="animated-hero__visual-rail-mark" aria-hidden="true">+</span>
             <p>Keep customer conversations moving with one shared workspace.</p>
             <div className="animated-hero__visual-stat"><strong>24/7</strong><small>Support-ready workflows</small></div>
-          </aside>
+          </aside> */}
           <div className="animated-hero__badge animated-hero__badge--contacts"><Users size={21} aria-hidden="true" /><div><strong>Customer context</strong><small>Keep details together</small></div></div>
           <div className="animated-hero__badge animated-hero__badge--flow"><Workflow size={21} aria-hidden="true" /><div><strong>Connected workflows</strong><small>From enquiry to handoff</small></div></div>
         </div>

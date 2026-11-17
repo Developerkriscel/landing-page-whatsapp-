@@ -5,6 +5,7 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Check, MessageSquare, Users, Bot, Zap, Shield, ArrowUpRight, ChevronDown, X } from 'lucide-react';
 import { api } from '../api/client';
@@ -468,20 +469,23 @@ export default function PricingPage() {
         </p>
       </footer>
 
-      {landingOffer?.enabled && !offerDismissed && (
-        <div className="landing-offer-banner" role="region" aria-label="Special offer">
-          <p>{landingOffer.message}</p>
-          <a href={landingOffer.buttonHref}>{landingOffer.buttonText}</a>
-          <button
-            type="button"
-            className="landing-offer-banner__close"
-            aria-label="Dismiss offer"
-            onClick={() => setOfferDismissed(true)}
-          >
-            <X size={20} aria-hidden="true" />
-          </button>
-        </div>
-      )}
+      {typeof document !== 'undefined' && landingOffer?.enabled && !offerDismissed &&
+        createPortal(
+          <div className="landing-offer-banner" role="region" aria-label="Special offer">
+            <p>{landingOffer.message}</p>
+            <a href={landingOffer.buttonHref}>{landingOffer.buttonText}</a>
+            <button
+              type="button"
+              className="landing-offer-banner__close"
+              aria-label="Dismiss offer"
+              onClick={() => setOfferDismissed(true)}
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }

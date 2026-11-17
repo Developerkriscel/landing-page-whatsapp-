@@ -15,3 +15,7 @@ apps/web/.env
 
 # Local development database, binaries, and process logs
 .local/
+*.tsbuildinfo
+Futuristic WhatsApp Automation Assistant.png
+*.mp4
+

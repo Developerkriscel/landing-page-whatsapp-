@@ -41,11 +41,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate('/pricing');
+    navigate('/pricing', { replace: true });
   };
 
   const updateForm = (key: string, value: string) => {
